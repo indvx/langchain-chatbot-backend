@@ -1,21 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
-from decouple import config
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
+from core.config import settings
 
 # Build connection string from environment variables
 SQLALCHEMY_DATABASE_URL = "{}://{}:{}@{}:{}/{}".format(
-    config("DB_ENGINE"),
-    config("MYSQL_USER"),
-    config("MYSQL_PASSWORD"),
-    config("MYSQL_URL"),
-    config("MYSQL_PORT"),
-    config("MYSQL_DB"),
+    settings.db_connection,
+    settings.db_user,
+    settings.db_password,
+    settings.db_host,
+    settings.db_port,
+    settings.db_name,
 )
 
 engine = create_engine(
@@ -40,4 +35,3 @@ def get_db():
     finally:
         db.close()
         engine.dispose()
-

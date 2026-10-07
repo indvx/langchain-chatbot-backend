@@ -6,7 +6,7 @@ from services.document_reader import DocumentReader
 from sql.cruds import documents as document_crud
 from utils.logger import logger
 import db
-
+from core.config import settings
 
 
 class DocumentIngestionService:
@@ -15,14 +15,14 @@ class DocumentIngestionService:
         self.document_reader = DocumentReader()
         self.__db = db.get_db()
 
-        self.data_folder = "./documents"
+        self.data_folder = str(settings.document_dir_name).strip()
         self.chunk_size = 1000
         self.chunk_overlap = 100
 
         self.public_vector_store = self.langchain_service.chroma_public_store()
         self.private_vector_store = self.langchain_service.chroma_private_store()
 
-    def ingest_file(self, path: str, type: str = 'public') -> bool:
+    def ingest_file(self, path: str, type: str = "public") -> bool:
         """Parse file into chunks and write embeddings to public/private vector stores."""
         try:
             logger.info(f"Starting ingestion for file: {path} | Type: {type}")
@@ -32,14 +32,16 @@ class DocumentIngestionService:
                 chunk_size=self.chunk_size,
                 chunk_overlap=self.chunk_overlap,
                 length_function=len,
-                separators=["\n", " ", ""]
+                separators=["\n", " ", ""],
             )
             documents = text_splitter.split_documents(loaded_documents)
             uuids = [str(uuid4()) for _ in range(len(documents))]
 
-            logger.info(f"Prepared {len(documents)} document chunks for vector storage.")
+            logger.info(
+                f"Prepared {len(documents)} document chunks for vector storage."
+            )
 
-            if type == 'private':
+            if type == "private":
                 logger.info("Uploading to private vector store...")
                 self.private_vector_store.add_documents(documents=documents, ids=uuids)
             else:
@@ -63,18 +65,22 @@ class DocumentIngestionService:
             for filename in os.listdir(self.data_folder):
                 if not filename.startswith("_"):
                     file_path = os.path.join(self.data_folder, filename)
-                    doc_type = 'private' if filename.startswith('private') else 'public'
+                    doc_type = "private" if filename.startswith("private") else "public"
 
                     logger.info(f"Processing new file: {filename} | Type: {doc_type}")
                     success = self.ingest_file(file_path, doc_type)
 
                     if not success:
-                        logger.warning(f"Skipping file due to ingestion failure: {filename}")
+                        logger.warning(
+                            f"Skipping file due to ingestion failure: {filename}"
+                        )
                         continue
 
                     # Mark file as processed in DB
                     new_filename = "_" + filename
-                    document = document_crud._get_document_by_dir_name(self.__db, filename)
+                    document = document_crud._get_document_by_dir_name(
+                        self.__db, filename
+                    )
 
                     if document:
                         document.doc_path = str(new_filename)  # type: ignore
@@ -88,10 +94,11 @@ class DocumentIngestionService:
                     os.rename(file_path, new_file_path)
                     processed_files.append(file_path)
 
-            logger.info(f"Main loop completed. Total files processed: {len(processed_files)}")
+            logger.info(
+                f"Main loop completed. Total files processed: {len(processed_files)}"
+            )
             return True
 
         except Exception as e:
             logger.error(f"Error in main_loop: {str(e)}", exc_info=True)
             return False
-

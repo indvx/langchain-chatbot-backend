@@ -1,7 +1,6 @@
 import db
 import os
-from decouple import config
-from dotenv import load_dotenv
+from core.config import settings
 from sql.cruds import documents as document_crud
 import uuid
 from services.langchain_service import LangchainService
@@ -10,13 +9,10 @@ import validators
 from middleware.auth_middleware import get_current_employee
 
 
-load_dotenv()
-
-
 class DocumentService:
     def __init__(self):
         self.__db = db.get_db()
-        self.__dir_name = str(config("DIR_NAME")).strip()
+        self.__dir_name = str(settings.document_dir_name).strip()
         self.__opne_ai_model = LangchainService()
         self.__ingestion_service = DocumentIngestionService()
 
@@ -24,11 +20,13 @@ class DocumentService:
         """Save uploaded document file and create initial database record."""
         try:
             employee = get_current_employee()
-            if not employee and employee.employee_type != 'admin':
+            if not employee and employee.employee_type != "admin":
                 raise PermissionError("Access denied")
 
-            filename = (f'{file.filename}').strip()
-            exist_document = document_crud._get_document_by_original_name(self.__db, filename)
+            filename = (f"{file.filename}").strip()
+            exist_document = document_crud._get_document_by_original_name(
+                self.__db, filename
+            )
             if exist_document:
                 raise ValueError(
                     "Please rename this file because it already exists in our records."
@@ -43,11 +41,7 @@ class DocumentService:
             with open(file_path, "wb") as out_file:
                 out_file.write(file.file.read())
 
-            doc_data = {
-                "original_path": filename,
-                "doc_path": file_name,
-                "type": type
-            }
+            doc_data = {"original_path": filename, "doc_path": file_name, "type": type}
 
             doc = document_crud.create_doc(self.__db, doc_data, employee.id)
             return doc
@@ -57,12 +51,12 @@ class DocumentService:
 
     def read_documents(
         self,
-        filter: str = '',
-        order_by: str = 'id',
-        order_direction: str = 'desc',
+        filter: str = "",
+        order_by: str = "id",
+        order_direction: str = "desc",
         limit: int = 10,
-        type: str = 'all',
-        page: int = 1
+        type: str = "all",
+        page: int = 1,
     ):
         """Fetch documents list with pagination metadata."""
         try:
@@ -88,13 +82,10 @@ class DocumentService:
                 "current_item": len(documents),
                 "limit": limit,
                 "page": page,
-                "total_items": all_items
+                "total_items": all_items,
             }
 
-            return {
-                "meta": meta,
-                "documents": documents
-            }
+            return {"meta": meta, "documents": documents}
 
         except Exception as e:
             raise ProcessLookupError(str(e))
@@ -105,11 +96,11 @@ class DocumentService:
             logged_in_employee = get_current_employee()
             file = document_crud._get_document_by_id(self.__db, id)
 
-            if not logged_in_employee and logged_in_employee.employee_type != 'admin':
-                raise PermissionError('Access denied')
+            if not logged_in_employee and logged_in_employee.employee_type != "admin":
+                raise PermissionError("Access denied")
 
             if file:
-                filepath = ''
+                filepath = ""
                 _path = str(file.doc_path)
 
                 self.__db.delete(file)
@@ -120,9 +111,9 @@ class DocumentService:
                     file_path = os.path.join(self.__dir_name, _path)
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                        filepath = file_path.replace('_', '')
+                        filepath = file_path.replace("_", "")
 
-                if filepath != '':
+                if filepath != "":
                     self.__opne_ai_model._delete_documents(filepath)
 
                 self.__db.commit()
@@ -137,17 +128,13 @@ class DocumentService:
         """Ingest document content from web URL and record in DB."""
         try:
             employee = get_current_employee()
-            if not employee and employee.employee_type != 'admin':
+            if not employee and employee.employee_type != "admin":
                 raise PermissionError("Access denied")
 
             self.__ingestion_service.ingest_file(url, type)
-            filename = url.split('/')[-1]
+            filename = url.split("/")[-1]
 
-            doc_data = {
-                "original_path": filename,
-                "doc_path": url,
-                "type": type
-            }
+            doc_data = {"original_path": filename, "doc_path": url, "type": type}
 
             doc = document_crud.create_doc(self.__db, doc_data, employee.id)
             return doc
@@ -155,4 +142,3 @@ class DocumentService:
         except Exception as e:
             print(f"Exception {str(e)}")
             raise ProcessLookupError(str(e))
-

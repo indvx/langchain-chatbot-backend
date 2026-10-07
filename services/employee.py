@@ -2,12 +2,8 @@ import db
 from sql.cruds import employees as employee_crud
 import jwt
 from datetime import datetime, timedelta
-from decouple import config
-from dotenv import load_dotenv
+from core.config import settings
 from middleware.auth_middleware import get_current_employee
-
-load_dotenv()
-
 
 
 class EmployeeService:
@@ -17,7 +13,9 @@ class EmployeeService:
     def create_employee(self, employee_data):
         """Create new employee record after ensuring unique email."""
         try:
-            employee = employee_crud.get_employee_by_email(self.__db, employee_data.email)
+            employee = employee_crud.get_employee_by_email(
+                self.__db, employee_data.email
+            )
             if employee:
                 raise ValueError("Please use a different email address.")
             employee_crud.create_employee(self.__db, employee_data)
@@ -42,8 +40,8 @@ class EmployeeService:
                             "email": employee.email,
                             "id": employee.id,
                         },
-                        str(config("SECRET_KEY")),
-                        str(config("ALGORITHM"))
+                        str(settings.jwt_secret_key),
+                        str(settings.jwt_algorithm),
                     )
                 else:
                     raise ValueError("Invalid employee username or password")
@@ -75,11 +73,11 @@ class EmployeeService:
 
     def read_employees(
         self,
-        filter: str = '',
-        order_by: str = 'id',
-        order_direction: str = 'desc',
+        filter: str = "",
+        order_by: str = "id",
+        order_direction: str = "desc",
         limit: int = 10,
-        page: int = 1
+        page: int = 1,
     ):
         """Fetch paginated list of employee records."""
         try:
@@ -89,12 +87,7 @@ class EmployeeService:
                 page = 1
 
             data = employee_crud.read_employees(
-                self.__db,
-                filter,
-                order_by,
-                order_direction,
-                limit,
-                page
+                self.__db, filter, order_by, order_direction, limit, page
             )
 
             all_items = data["all_items"]
@@ -103,13 +96,10 @@ class EmployeeService:
                 "current_item": len(employees),
                 "limit": limit,
                 "page": page,
-                "total_items": all_items
+                "total_items": all_items,
             }
 
-            return {
-                "meta": meta,
-                "employees": employees
-            }
+            return {"meta": meta, "employees": employees}
         except Exception as e:
             raise ProcessLookupError(str(e))
 
@@ -118,12 +108,12 @@ class EmployeeService:
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
-                raise PermissionError('Access denied')
+                raise PermissionError("Access denied")
 
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if employee and (
-                logged_in_employee.id == employee.id or
-                logged_in_employee.employee_type == 'admin'
+                logged_in_employee.id == employee.id
+                or logged_in_employee.employee_type == "admin"
             ):
                 self.__db.delete(employee)
                 self.__db.commit()
@@ -143,23 +133,27 @@ class EmployeeService:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if not employee:
                 raise ValueError("Please provide valid details.")
-            
+
             if logged_in_employee.employee_type != "admin" and employee.id != id:  # type: ignore
                 raise PermissionError("Access denied")
 
-            if hasattr(data, 'email') and data.email != '':
-                employee_by_email = employee_crud.get_employee_by_email(self.__db, data.email)
+            if hasattr(data, "email") and data.email != "":
+                employee_by_email = employee_crud.get_employee_by_email(
+                    self.__db, data.email
+                )
                 if employee_by_email and employee.id != employee_by_email.id:  # type: ignore
                     raise ValueError("Provided email already exists.")
 
-            if hasattr(data, 'employee_type') and data.employee_type:
-                if data.employee_type == 'admin' and logged_in_employee.employee_type == 'admin':
+            if hasattr(data, "employee_type") and data.employee_type:
+                if (
+                    data.employee_type == "admin"
+                    and logged_in_employee.employee_type == "admin"
+                ):
                     pass
                 else:
-                    data.employee_type = 'employee'
+                    data.employee_type = "employee"
 
             employee = employee_crud.update_employee(self.__db, employee, data)
             return employee
         except Exception as e:
             raise ProcessLookupError(str(e))
-

@@ -1,17 +1,14 @@
-from decouple import config
+from alembic import config
 import requests
-from dotenv import load_dotenv
 from services.langchain_service import LangchainService
-
-load_dotenv()
-
+from core.config import settings
 
 
 class WhatsAppService:
     def __init__(self) -> None:
-        self.__access_token = str(config("ACCESS_TOKEN")).strip()
-        self.phone_number_id = config("PHONE_NUMBER_ID")
-        self.__graph_api_url = config("GRAPH_API_URL")
+        self.__access_token = str(settings.meta_access_token).strip()
+        self.phone_number_id = settings.meta_phone_number_id
+        self.__graph_api_url = settings.meta_graph_api_url
         self.__langchain_service = LangchainService()
 
     def reply_whatsapp_message(self, to: str, query: str):
@@ -22,14 +19,14 @@ class WhatsAppService:
 
             headers = {
                 "Authorization": f"Bearer {self.__access_token}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             payload = {
                 "messaging_product": "whatsapp",
                 "to": to,
                 "type": "text",
-                "text": {"body": reply_message["answer"]}
+                "text": {"body": reply_message["answer"]},
             }
 
             response = requests.post(url, headers=headers, json=payload)
@@ -39,4 +36,3 @@ class WhatsAppService:
 
         except Exception as e:
             raise ProcessLookupError(str(e))
-

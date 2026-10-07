@@ -1,16 +1,15 @@
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from decouple import config
-
+from core.config import settings
 
 
 class LLMService:
     """Factory for instantiating Chat and Embedding models based on config."""
 
     def __init__(self):
-        self.__provider = str(config("MODEL_PROVIDER"))
-        self.__chat_model = str(config("MODEL_NAME"))
-        self.__embedding_model = str(config("EMBEDDING_MODEL"))
+        self.__provider = str(settings.llm_provider)
+        self.__chat_model = str(settings.llm_model_name)
+        self.__embedding_model = str(settings.llm_embedding_model)
 
     def gemini_chat_model(self):
         return ChatGoogleGenerativeAI(
@@ -22,9 +21,7 @@ class LLMService:
         )
 
     def gemini_embedding_model(self):
-        return GoogleGenerativeAIEmbeddings(
-            model=self.__embedding_model
-        )
+        return GoogleGenerativeAIEmbeddings(model=self.__embedding_model)
 
     def openai_chat_model(self):
         return ChatOpenAI(model=self.__chat_model, temperature=0, verbose=True)
@@ -33,12 +30,11 @@ class LLMService:
         return OpenAIEmbeddings(model=self.__embedding_model)
 
     def get_chat_model(self):
-        if self.__provider == 'openai':
+        if self.__provider == "openai":
             return self.openai_chat_model()
         return self.gemini_chat_model()
 
     def get_embedding_model(self):
-        if self.__provider == 'openai':
+        if self.__provider == "openai":
             return self.openai_embedding_model()
         return self.gemini_embedding_model()
-

@@ -1,3 +1,4 @@
+from alembic import config
 import jwt
 import time
 from dotenv import load_dotenv
@@ -7,9 +8,7 @@ from sql.schemas.employees import LoggedInEmployeeSchema
 import db
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
-from decouple import config
-
-load_dotenv()
+from core.config import settings
 
 
 # Track active user for request scope
@@ -35,12 +34,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 token = authorization[1]
 
                 if token_type.lower() != "bearer":
-                    raise HTTPException(status_code=401, detail="Invalid Authorization type")
+                    raise HTTPException(
+                        status_code=401, detail="Invalid Authorization type"
+                    )
 
                 payload = jwt.decode(
                     token,
-                    str(config("SECRET_KEY")).strip(),
-                    algorithms=[str(config("ALGORITHM")).strip()],
+                    str(settings.jwt_secret_key).strip(),
+                    algorithms=[str(settings.jwt_algorithm).strip()],
                 )
 
                 employee = employee_crud.get_employee_by_id(
@@ -64,4 +65,3 @@ class AuthMiddleware(BaseHTTPMiddleware):
 def get_current_employee():
     """Retrieve currently authenticated employee context, or None."""
     return current_employee_var
-

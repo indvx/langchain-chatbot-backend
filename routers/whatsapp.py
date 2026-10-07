@@ -1,28 +1,22 @@
+from alembic import config
 from fastapi import APIRouter, Query
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.requests import Request
 from services.whatsapp_service import WhatsAppService
-from decouple import config
-from dotenv import load_dotenv
+from core.config import settings
 
-
-load_dotenv()
-
-router = APIRouter(
-    prefix='/whatsapp',
-    tags=["What'sApp"]
-)
+router = APIRouter(prefix="/whatsapp", tags=["What'sApp"])
 
 
 @router.get("/webhook")
 async def verify_whatsapp_webhook(
-    hub_mode: str = Query(alias='hub.mode'),
-    hub_challenge: str = Query(alias='hub.challenge'),
-    hub_verify_token: str = Query(alias='hub.verify_token')
+    hub_mode: str = Query(alias="hub.mode"),
+    hub_challenge: str = Query(alias="hub.challenge"),
+    hub_verify_token: str = Query(alias="hub.verify_token"),
 ):
     # Verify Meta webhook challenge
-    if hub_mode == "subscribe" and hub_verify_token == config('VERIFY_TOKEN'):
+    if hub_mode == "subscribe" and hub_verify_token == settings.meta_verify_token:
         return PlainTextResponse(content=hub_challenge, status_code=200)
     else:
         return PlainTextResponse(content="Forbidden", status_code=403)
@@ -53,4 +47,3 @@ async def reply_incoming_message(request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-

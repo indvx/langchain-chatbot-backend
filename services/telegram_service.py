@@ -1,13 +1,12 @@
-from decouple import config
+from core.config import settings
 import requests
 from services.langchain_service import LangchainService
 
 
-
 class TelegramService:
     def __init__(self):
-        self.__telegram_token = str(config("BOT_TOKEN")).strip()
-        self.__telegram_api_url = str(config("TELEGRAM_API_URL")).strip()
+        self.__telegram_token = str(settings.telegram_bot_token).strip()
+        self.__telegram_api_url = str(settings.telegram_api_url).strip()
         self.__langchain_service = LangchainService()
 
     def _start_app(self, chat_id):
@@ -29,9 +28,8 @@ class TelegramService:
 
             reply_text = self.__langchain_service.generate_answer(query)
 
-            payload = {"chat_id": chat_id, "text": reply_text['answer']}
+            payload = {"chat_id": chat_id, "text": reply_text["answer"]}
             response = requests.post(f"{url}/sendMessage", json=payload)
             return response.json()
         except Exception as e:
             raise ProcessLookupError(str(e))
-

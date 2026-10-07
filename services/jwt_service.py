@@ -2,11 +2,7 @@ import time
 import jwt
 from fastapi import HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from dotenv import load_dotenv
-from decouple import config
-
-load_dotenv()
-
+from core.config import settings
 
 
 class JWTBearer(HTTPBearer):
@@ -16,7 +12,9 @@ class JWTBearer(HTTPBearer):
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)  # type: ignore
 
         if not credentials or credentials.scheme != "Bearer":
-            raise HTTPException(status_code=403, detail="Invalid or missing authentication")
+            raise HTTPException(
+                status_code=403, detail="Invalid or missing authentication"
+            )
 
         self.decode_jwt(credentials.credentials)
         return credentials
@@ -26,8 +24,8 @@ class JWTBearer(HTTPBearer):
         try:
             decoded = jwt.decode(
                 token,
-                str(config("SECRET_KEY")).strip(),
-                algorithms=[str(config("ALGORITHM")).strip()]
+                str(settings.jwt_secret_key).strip(),
+                algorithms=[str(settings.jwt_algorithm).strip()],
             )
 
             if decoded.get("exp", 0) < time.time():
@@ -39,4 +37,3 @@ class JWTBearer(HTTPBearer):
             raise HTTPException(status_code=403, detail="Token expired")
         except jwt.InvalidTokenError:
             raise HTTPException(status_code=403, detail="Invalid token")
-
