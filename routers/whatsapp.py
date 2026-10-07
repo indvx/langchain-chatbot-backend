@@ -6,12 +6,6 @@ from services.whatsapp_service import WhatsAppService
 from decouple import config
 from dotenv import load_dotenv
 
-# ------------------------------------------------------------
-# Router: WhatsApp
-# Description:
-#   Handles webhook verification and message events
-#   from the WhatsApp Business API.
-# ------------------------------------------------------------
 
 load_dotenv()
 
@@ -21,33 +15,19 @@ router = APIRouter(
 )
 
 
-# ------------------------------------------------------------
-# Endpoint: GET /whatsapp/webhook
-# Description:
-#   Verifies the webhook URL during setup with WhatsApp Cloud API.
-#   Meta (Facebook) sends 'hub.mode', 'hub.challenge', and 'hub.verify_token'.
-#   If verification passes, returns the challenge to confirm the webhook.
-# ------------------------------------------------------------
 @router.get("/webhook")
 async def verify_whatsapp_webhook(
     hub_mode: str = Query(alias='hub.mode'),
     hub_challenge: str = Query(alias='hub.challenge'),
     hub_verify_token: str = Query(alias='hub.verify_token')
 ):
+    # Verify Meta webhook challenge
     if hub_mode == "subscribe" and hub_verify_token == config('VERIFY_TOKEN'):
         return PlainTextResponse(content=hub_challenge, status_code=200)
     else:
         return PlainTextResponse(content="Forbidden", status_code=403)
 
 
-# ------------------------------------------------------------
-# Endpoint: POST /whatsapp/webhook
-# Description:
-#   Receives and processes incoming messages from WhatsApp users.
-#   - Validates the request body.
-#   - Extracts message content and sender phone number.
-#   - Uses WhatsAppService to send a reply message.
-# ------------------------------------------------------------
 @router.post("/webhook")
 async def reply_incoming_message(request: Request):
     body = await request.body()
@@ -73,3 +53,4 @@ async def reply_incoming_message(request: Request):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+

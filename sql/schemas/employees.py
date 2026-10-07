@@ -4,14 +4,7 @@ from marshmallow_sqlalchemy.fields import Nested
 from sql.models.employees import Employee as EmployeeModel
 
 
-# ------------------------------------------------------------
-# Schema: LoggedInEmployeeSchema
-# Description:
-#   Defines the serialized structure for a logged-in employee.
-#
-#   Used for responses after authentication or profile retrieval,
-#   excluding sensitive information like passwords.
-# ------------------------------------------------------------
+
 class LoggedInEmployeeSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = EmployeeModel
@@ -26,14 +19,6 @@ class LoggedInEmployeeSchema(SQLAlchemyAutoSchema):
         )
 
 
-# ------------------------------------------------------------
-# Schema: EmployeeSchema
-# Description:
-#   Provides full serialization for employee data, including
-#   related addresses and metadata such as creation and update timestamps.
-#
-#   This schema is typically used for admin views or internal API responses.
-# ------------------------------------------------------------
 class EmployeeSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = EmployeeModel
@@ -52,14 +37,6 @@ class EmployeeSchema(SQLAlchemyAutoSchema):
         )
 
 
-# ------------------------------------------------------------
-# Schema: CreateEmployeeSchema
-# Description:
-#   Defines the structure for creating a new employee record.
-#
-#   Used when registering or adding new employees; excludes
-#   read-only fields such as timestamps or relationships.
-# ------------------------------------------------------------
 class CreateEmployeeSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = EmployeeModel
@@ -73,14 +50,6 @@ class CreateEmployeeSchema(SQLAlchemyAutoSchema):
         )
 
 
-# ------------------------------------------------------------
-# Schema: ReadAllEmployeeSchema
-# Description:
-#   Defines the structure for reading all employee records.
-#
-#   Includes address relationships and all standard employee
-#   attributes for administrative listing and reporting.
-# ------------------------------------------------------------
 class ReadAllEmployeeSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = EmployeeModel
@@ -97,3 +66,4 @@ class ReadAllEmployeeSchema(SQLAlchemyAutoSchema):
             "updated_at",
             "addresses",
         )
+

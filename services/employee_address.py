@@ -4,33 +4,16 @@ from decouple import config
 from dotenv import load_dotenv
 from middleware.auth_middleware import get_current_employee
 
-# ------------------------------------------------------------
-# Service: EmployeeAddressService
-# Description:
-#   Handles CRUD operations for employee addresses.
-#   Includes access control to ensure employees can only
-#   modify their own addresses unless they are admin.
-# ------------------------------------------------------------
-
 load_dotenv()
 
 
+
 class EmployeeAddressService:
-    # ------------------------------------------------------------
-    # Constructor
-    # Initializes database connection.
-    # ------------------------------------------------------------
     def __init__(self):
         self.__db = db.get_db()
 
-    # ------------------------------------------------------------
-    # Method: create_employee_address
-    # Description:
-    #   Creates a new address record for an employee.
-    #   - Verifies user authentication.
-    #   - Updates existing default address if necessary.
-    # ------------------------------------------------------------
     def create_employee_address(self, employee_id, data):
+        """Add new employee address and update default flag if requested."""
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -47,14 +30,8 @@ class EmployeeAddressService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: delete_employee_address
-    # Description:
-    #   Deletes an existing employee address by ID.
-    #   - Prevents deletion of default address.
-    #   - Restricts access to admin or the owner employee.
-    # ------------------------------------------------------------
     def delete_employee_address(self, address_id):
+        """Delete non-default employee address (admin or owner only)."""
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -82,13 +59,8 @@ class EmployeeAddressService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: read_employee_addresses
-    # Description:
-    #   Retrieves all addresses for a specific employee.
-    #   - Restricts access to admin or the employee themselves.
-    # ------------------------------------------------------------
     def read_employee_addresses(self, employee_id: int):
+        """Fetch all addresses for an employee (admin or owner only)."""
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -107,3 +79,4 @@ class EmployeeAddressService:
 
         except Exception as e:
             raise ProcessLookupError(str(e))
+

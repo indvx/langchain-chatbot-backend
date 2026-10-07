@@ -8,27 +8,14 @@ from middleware.auth_middleware import get_current_employee
 
 load_dotenv()
 
-# ------------------------------------------------------------
-# Service: EmployeeService
-# Description:
-#   Handles CRUD operations for employee.
-#   Includes access control to ensure employees can only
-# ------------------------------------------------------------
+
 
 class EmployeeService:
-    """Service layer for handling employee-related operations."""
-
     def __init__(self):
         self.__db = db.get_db()
 
-    # ------------------------------------------------------------
-    # Method: create_employee
-    # Description:
-    #   Creates a new employee record in the database.
-    #   - Checks if an email already exists.
-    #   - Inserts new employee data if unique.
-    # ------------------------------------------------------------
     def create_employee(self, employee_data):
+        """Create new employee record after ensuring unique email."""
         try:
             employee = employee_crud.get_employee_by_email(self.__db, employee_data.email)
             if employee:
@@ -38,14 +25,8 @@ class EmployeeService:
         except Exception as e:
             raise LookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: login
-    # Description:
-    #   Authenticates an employee by email and password.
-    #   - Validates credentials.
-    #   - Returns a JWT token valid for 1 day if successful.
-    # ------------------------------------------------------------
     def login(self, employee_data):
+        """Verify email & password credentials and return a signed JWT token."""
         try:
             employee_name = employee_data.email
             password = employee_data.password
@@ -74,24 +55,16 @@ class EmployeeService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: get_current_employee
-    # Description:
-    #   Retrieves the currently authenticated employee.
-    # ------------------------------------------------------------
     def get_current_employee(self):
+        """Return the active employee from request auth context."""
         try:
             employee = get_current_employee()
             return employee
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: read_employee
-    # Description:
-    #   Fetches a specific employee's details by ID.
-    # ------------------------------------------------------------
     def read_employee(self, id: int):
+        """Find single employee record by ID."""
         try:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if not employee:
@@ -100,12 +73,6 @@ class EmployeeService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: read_employees
-    # Description:
-    #   Retrieves a paginated list of employees.
-    #   - Supports filtering, sorting, and pagination.
-    # ------------------------------------------------------------
     def read_employees(
         self,
         filter: str = '',
@@ -114,6 +81,7 @@ class EmployeeService:
         limit: int = 10,
         page: int = 1
     ):
+        """Fetch paginated list of employee records."""
         try:
             if limit < 1:
                 limit = 10
@@ -145,13 +113,8 @@ class EmployeeService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: delete_employee
-    # Description:
-    #   Deletes an employee record by ID.
-    #   - Only admins or the employee themselves can perform this.
-    # ------------------------------------------------------------
     def delete_employee(self, id: int):
+        """Delete employee record (admin or owner only)."""
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -170,15 +133,8 @@ class EmployeeService:
         except Exception as e:
             raise ProcessLookupError(str(e))
 
-    # ------------------------------------------------------------
-    # Method: update_employee
-    # Description:
-    #   Updates an employee’s details.
-    #   - Ensures permission: only admin or self.
-    #   - Prevents duplicate emails.
-    #   - Restricts non-admins from promoting themselves to admin.
-    # ------------------------------------------------------------
     def update_employee(self, id: int, data):
+        """Update employee profile and handle role promotion authorization."""
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -206,3 +162,4 @@ class EmployeeService:
             return employee
         except Exception as e:
             raise ProcessLookupError(str(e))
+

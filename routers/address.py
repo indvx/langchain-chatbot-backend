@@ -7,9 +7,6 @@ from services.jwt_service import JWTBearer
 from fastapi.requests import Request
 
 
-# ------------------------------------------------------------
-# Router configuration for Employee-related address operations
-# ------------------------------------------------------------
 router = APIRouter(
     prefix="/employee",
     tags=["Employee"],
@@ -17,12 +14,6 @@ router = APIRouter(
 )
 
 
-# ------------------------------------------------------------
-# Endpoint: Create new employee address
-# Description:
-#   - Adds a new address for a specific employee.
-#   - Requires authentication via JWTBearer.
-# ------------------------------------------------------------
 @router.post("/{employee_id:int}/address", summary="Create new employee address")
 def create_employee_address(
     employee_id: int,
@@ -40,12 +31,6 @@ def create_employee_address(
     )
 
 
-# ------------------------------------------------------------
-# Endpoint: Get employee address list
-# Description:
-#   - Retrieves all saved addresses for a given employee.
-#   - Only accessible for authenticated users.
-# ------------------------------------------------------------
 @router.get("/{employee_id:int}/address/list", summary="Get employee address list")
 def get_employee_address_list(
     employee_id: int,
@@ -59,12 +44,6 @@ def get_employee_address_list(
     return response
 
 
-# ------------------------------------------------------------
-# Endpoint: Delete employee address by ID
-# Description:
-#   - Deletes a specific employee address using its ID.
-#   - Can be restricted via authentication (recommended).
-# ------------------------------------------------------------
 @router.delete("/address/{id:int}", summary="Delete employee address by ID")
 def delete_employee_address(
     id: int,
@@ -79,3 +58,4 @@ def delete_employee_address(
         content={"message": response},
         status_code=status.HTTP_200_OK,
     )
+
