@@ -10,8 +10,6 @@ python-dotenv==1.0.1
 validators==0.22.0
 apscheduler==3.10.4
 sqlalchemy==2.0.34
-mysqlclient==2.2.4
-mysql-connector-python==9.1.0
 langchain==0.3.9
 langchain-core==0.3.29
 langchain-community==0.3.8
@@ -24,3 +22,5 @@ chromadb==0.5.3
 pypdf==5.0.0
 beautifulsoup4==4.12.3
 docx2txt
+PyMySQL
+alembic==1.20.0
