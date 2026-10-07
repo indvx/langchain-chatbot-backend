@@ -15,33 +15,13 @@ from services.utility import UtilityService
 from db import SQLALCHEMY_DATABASE_URL
 from services.llm_service import LLMService
 
-# ------------------------------------------------------------
-# Module: langchain_service
-# Description:
-#   Centralized handler for LLM interactions, embeddings,
-#   and retrieval-augmented generation (RAG) pipelines.
-#   Integrates vector databases (Chroma, Pinecone) and SQL reasoning.
-# ------------------------------------------------------------
-
 load_dotenv()
 
 
-# ------------------------------------------------------------
-# Class: LangchainService
-# Description:
-#   Provides high-level methods for:
-#     - Managing LLMs and embeddings.
-#     - Integrating Chroma vector stores.
-#     - Executing SQL-aware question answering.
-#     - Combining RAG-based and SQL-based responses.
-# ------------------------------------------------------------
+
 class LangchainService:
-    # ------------------------------------------------------------
-    # Method: __init__
-    # Description:
-    #   Initializes embeddings, language model, and utility service.
-    #   Ensures persistence directory for local vector storage.
-    # ------------------------------------------------------------
+    """RAG and SQL query orchestration service."""
+
     def __init__(self):
         os.makedirs("vector_db", exist_ok=True)
         self.llm_service = LLMService()
@@ -49,11 +29,6 @@ class LangchainService:
         self.embeddings = self.llm_service.get_embedding_model()
         self._utility_service = UtilityService()
 
-    # ------------------------------------------------------------
-    # Method: chroma_public_store
-    # Description:
-    #   Returns a Chroma vector store for public documents.
-    # ------------------------------------------------------------
     def chroma_public_store(self):
         return Chroma(
             collection_name="example_collection",
@@ -61,11 +36,6 @@ class LangchainService:
             persist_directory="./vector_db/chroma_langchain_db",
         )
 
-    # ------------------------------------------------------------
-    # Method: chroma_private_store
-    # Description:
-    #   Returns a Chroma vector store for private (authenticated) documents.
-    # ------------------------------------------------------------
     def chroma_private_store(self):
         return Chroma(
             collection_name="example_private_collection",
@@ -73,15 +43,8 @@ class LangchainService:
             persist_directory="./vector_db/chroma_langchain_db",
         )
 
-    # ------------------------------------------------------------
-    # Method: sql_chain
-    # Description:
-    #   Creates a query chain for database question answering.
-    #   - Writes natural language queries to SQL.
-    #   - Executes SQL safely (only SELECT operations).
-    #   - Combines SQL result interpretation with general knowledge.
-    # ------------------------------------------------------------
     def sql_chain(self):
+        """Construct chain for translating text to SQL queries and executing them."""
         db = SQLDatabase.from_uri(SQLALCHEMY_DATABASE_URL)
         execute_query = QuerySQLDataBaseTool(db=db)
         write_query = create_sql_query_chain(self.llm, db)
@@ -114,14 +77,8 @@ class LangchainService:
         )
         return chain
 
-    # ------------------------------------------------------------
-    # Method: vector_chain
-    # Description:
-    #   Creates a Retrieval-Augmented Generation (RAG) pipeline.
-    #   - Uses Chroma retrievers (public/private).
-    #   - Generates context-aware answers based on stored docs.
-    # ------------------------------------------------------------
     def vector_chain(self, is_logged_in: bool = False):
+        """Construct RAG retrieval chain using private or public vector collections."""
         if is_logged_in:
             print("Employee is Logged-In")
             retriever = self.chroma_private_store(
@@ -140,15 +97,8 @@ class LangchainService:
         combine_docs_chain = create_stuff_documents_chain(self.llm, rag_prompt)
         return create_retrieval_chain(retriever, combine_docs_chain)
 
-    # ------------------------------------------------------------
-    # Method: generate_answer
-    # Description:
-    #   Handles hybrid reasoning (SQL + RAG).
-    #   - Executes SQL chain if authenticated.
-    #   - Executes vector retrieval always.
-    #   - Merges both results into a final coherent answer.
-    # ------------------------------------------------------------
     def generate_answer(self, query: str, is_logged_in: bool = False):
+        """Combine DB query results and document RAG into a merged response."""
         sql_response = ''
         if is_logged_in:
             response = self.sql_chain().invoke({"question": query})
@@ -163,13 +113,8 @@ class LangchainService:
             sql_response, vector_response['answer'])
         return {'answer': merged_response}
 
-    # ------------------------------------------------------------
-    # Method: final_answer
-    # Description:
-    #   Merges responses from SQL and vector-based results
-    #   into a unified, concise, and readable output.
-    # ------------------------------------------------------------
     def final_answer(self, sql_response, vector_response):
+        """Synthesize SQL and document results into a single non-redundant answer."""
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an AI assistant that merges responses into one answer."),
             ("human", "Context from SQL:\n{sql_response}\n\nContext from RAG:\n{vector_response}\n\nMerge both contexts into a single, human-readable answer without repetition."),
@@ -183,14 +128,11 @@ class LangchainService:
         })
         return final_answer
 
-    # ------------------------------------------------------------
-    # Method: _delete_documents
-    # Description:
-    #   Removes document embeddings from both Chroma stores.
-    # ------------------------------------------------------------
     def _delete_documents(self, file_path):
+        """Purge indexed document chunks by source path from vector stores."""
         public_vector_store = self.chroma_public_store()
         private_vector_store = self.chroma_private_store()
         public_vector_store.delete(where={"source": file_path})
         private_vector_store.delete(where={"source": file_path})
         return True
+
