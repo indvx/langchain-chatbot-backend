@@ -12,3 +12,4 @@ myVenv
 vector_db
 langchain-chatbot-venv
 logs
+Dockerfile
