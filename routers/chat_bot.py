@@ -16,12 +16,12 @@ langchain_service = LangchainService()
 
 @router.post("/")
 def start_chat(question: ChatModel):
+    """Answer a chat question, taking the employee's login state into account."""
     try:
         employee = get_current_employee()
         is_logged_in = bool(employee)
         response = langchain_service.generate_answer(question.query, is_logged_in)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-    
-    return JSONResponse(f"{response['answer']}", status_code=200)
 
+    return JSONResponse(f"{response['answer']}", status_code=200)
