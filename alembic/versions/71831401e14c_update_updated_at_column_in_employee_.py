@@ -1,10 +1,4 @@
-"""update updated_at column in employee tabls
-
-Revision ID: 71831401e14c
-Revises: 06cf965dfba4
-Create Date: 2026-10-07 08:57:28.268402
-
-"""
+"""update updated_at column in employee tabls Revision ID: 71831401e14c Revises: 06cf965dfba4 Create Date: 2026-10-07 08:57:28.268402"""
 from typing import Sequence, Union
 
 from alembic import op

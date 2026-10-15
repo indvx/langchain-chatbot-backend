@@ -1,10 +1,4 @@
-"""create document table
-
-Revision ID: 06cf965dfba4
-Revises: 8150e746e4f9
-Create Date: 2026-10-07 07:29:11.997636
-
-"""
+"""create document table Revision ID: 06cf965dfba4 Revises: 8150e746e4f9 Create Date: 2026-10-07 07:29:11.997636"""
 from typing import Sequence, Union
 
 from alembic import op

@@ -16,10 +16,7 @@ global current_employee_var
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    """
-    Parses bearer token from authorization header and populates current employee.
-    If token is invalid or missing, request proceeds unauthenticated.
-    """
+    """Parses bearer token from authorization header and populates current employee. If token is invalid or missing, request proceeds unauthenticated."""
 
     async def dispatch(self, request: Request, call_next):
         global current_employee_var
