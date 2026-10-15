@@ -1,10 +1,4 @@
-"""create employee table
-
-Revision ID: d853b047bfaf
-Revises: 
-Create Date: 2026-10-07 07:26:58.103210
-
-"""
+"""create employee table Revision ID: d853b047bfaf Revises: Create Date: 2026-10-07 07:26:58.103210"""
 from typing import Sequence, Union
 
 from alembic import op
