@@ -1,10 +1,4 @@
-"""create employee address table
-
-Revision ID: 8150e746e4f9
-Revises: d853b047bfaf
-Create Date: 2026-10-07 07:27:40.833396
-
-"""
+"""create employee address table Revision ID: 8150e746e4f9 Revises: d853b047bfaf Create Date: 2026-10-07 07:27:40.833396"""
 from typing import Sequence, Union
 
 from alembic import op
