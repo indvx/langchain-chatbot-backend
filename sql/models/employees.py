@@ -1,22 +1,14 @@
-from sqlalchemy import Column, Integer, String
-from datetime import datetime
-from db import Base
-from sqlalchemy.orm import relationship
-from sql.models.employee_addresses import employeeAddresses
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.sql import func
+from sql.models.base import Base
 
 
-class Employee(Base):
+class Employees(Base):
     __tablename__ = "employees"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    password = Column(String(255), nullable=True, default=False)
-    employee_type = Column(String(255), nullable=True, default="employee")
-    created_at = Column(String(255), default=datetime.now(), nullable=False)
-    updated_at = Column(String(255), nullable=True, onupdate=datetime.now())
-    # addresses = relationship(
-    #     employeeAddresses,
-    #     cascade="all,delete",
-    #     backref='employees'
-    # )
+    name = Column(String(100), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
