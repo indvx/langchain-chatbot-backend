@@ -11,24 +11,32 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from core.config import settings
 
 
-# Track active user for request scope
+# Global container to hold the employee record for the current request lifecycle.
+# Consumed downstream by get_current_employee() across services and endpoints.
 global current_employee_var
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
     """
-    Parses bearer token from authorization header and populates current employee.
-    If token is invalid or missing, request proceeds unauthenticated.
+    HTTP middleware that inspects the 'Authorization: Bearer <token>' header on every request.
+    If valid, it extracts the employee ID, loads the employee record from the DB,
+    and stores it in module scope for downstream access (e.g. by LangChain service).
+    
+    If token is invalid or missing, it fails silently so public routes (signup, login,
+    webhooks) can still proceed without errors. Protected routes enforce authentication
+    explicitly via FastAPI's Depends(JWTBearer()).
     """
 
     async def dispatch(self, request: Request, call_next):
         global current_employee_var
+        # Reset context at the start of each request to prevent state leaking across requests
         current_employee_var = None
 
         authorization = request.headers.get("Authorization")
 
         if authorization:
             try:
+                # Expecting 'Bearer <jwt_token>' format
                 authorization = authorization.split(" ")
                 token_type = authorization[0]
                 token = authorization[1]
@@ -38,12 +46,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
                         status_code=401, detail="Invalid Authorization type"
                     )
 
+                # Validate signature and expiration using application secret key
                 payload = jwt.decode(
                     token,
                     str(settings.jwt_secret_key).strip(),
                     algorithms=[str(settings.jwt_algorithm).strip()],
                 )
 
+                # Fetch fresh employee details from database
                 employee = employee_crud.get_employee_by_id(
                     db.get_db(), payload.get("id", 0)
                 )
@@ -54,7 +64,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 current_employee_var = logged_employee
 
             except Exception:
-                # Silently ignore auth failures for public routes
+                # Do not block the request pipeline here; routes that strictly require
+                # a valid token use the JWTBearer dependency which returns HTTP 403.
                 current_employee_var = None
                 pass
 
@@ -63,5 +74,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 def get_current_employee():
-    """Retrieve currently authenticated employee context, or None."""
+    """
+    Helper for services/routers (like chatbot RAG) to check if the caller is
+    an authenticated employee or an anonymous visitor.
+    Returns LoggedInEmployee instance if valid token was present, else None.
+    """
     return current_employee_var

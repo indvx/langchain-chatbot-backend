@@ -4,7 +4,13 @@ from datetime import datetime
 from db import Base
 
 
+# SQLAlchemy ORM model for employee physical addresses.
 class employeeAddresses(Base):
+    """
+    Stores physical/mailing addresses linked to employees.
+    An employee can have multiple addresses, with 'is_default' designating
+    their primary active residence.
+    """
     __tablename__ = "employee_addresses"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -17,4 +23,6 @@ class employeeAddresses(Base):
 
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     updated_at = Column(DateTime, onupdate=datetime.now)
+    # Establishes bi-directional link to Employee, exposed on Employee as employee.addresses
     employee = relationship("Employee", backref="addresses")
+

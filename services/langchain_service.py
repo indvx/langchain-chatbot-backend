@@ -18,10 +18,12 @@ from services.llm_service import LLMService
 load_dotenv()
 
 
+# Core AI orchestration service for RAG (Retrieval-Augmented Generation) and Text-to-SQL.
+# Manages ChromaDB vector stores, converts natural language queries to safe SQL,
+# and consolidates answers from both structured database tables and unstructured document files.
 class LangchainService:
-    """RAG and SQL query orchestration service."""
-
     def __init__(self):
+        # Ensure local vector database directory exists
         os.makedirs("vector_db", exist_ok=True)
         self.llm_service = LLMService()
         self.llm = self.llm_service.get_chat_model()
@@ -29,6 +31,7 @@ class LangchainService:
         self._utility_service = UtilityService()
 
     def chroma_public_store(self):
+        """ChromaDB collection for public documents accessible to anonymous users."""
         return Chroma(
             collection_name="example_collection",
             embedding_function=self.embeddings,
@@ -36,6 +39,7 @@ class LangchainService:
         )
 
     def chroma_private_store(self):
+        """ChromaDB collection containing both private documents and mirrored public documents."""
         return Chroma(
             collection_name="example_private_collection",
             embedding_function=self.embeddings,
@@ -43,7 +47,14 @@ class LangchainService:
         )
 
     def sql_chain(self):
-        """Construct chain for translating text to SQL queries and executing them."""
+        """
+        Builds a Text-to-SQL chain:
+        1. create_sql_query_chain: translates user prompt into raw SQL.
+        2. clean_sql_query: strips markdown fences and LLM conversational prefixes.
+        3. QuerySQLDataBaseTool: executes the sanitized query against the live DB.
+        4. answer_prompt: synthesizes raw SQL result rows into friendly, conversational text,
+           strictly enforcing read-only behavior (no DELETE/UPDATE) and hiding sensitive internal IDs.
+        """
         db = SQLDatabase.from_uri(SQLALCHEMY_DATABASE_URL)
         execute_query = QuerySQLDataBaseTool(db=db)
         write_query = create_sql_query_chain(self.llm, db)
@@ -76,6 +87,7 @@ class LangchainService:
         )
 
         answer = answer_prompt | self.llm
+        # Assemble pipeline: generate SQL -> clean SQL -> run query -> summarize results
         chain = (
             RunnablePassthrough.assign(
                 query=write_query
@@ -86,7 +98,12 @@ class LangchainService:
         return chain
 
     def vector_chain(self, is_logged_in: bool = False):
-        """Construct RAG retrieval chain using private or public vector collections."""
+        """
+        Builds document RAG chain based on caller authentication:
+        - Logged-in users retrieve from private store (which includes all company docs).
+        - Anonymous / public users retrieve only from public store.
+        Pulls top 2 most relevant chunks (k=2) to balance context quality with token usage.
+        """
         if is_logged_in:
             print("Employee is Logged-In")
             retriever = self.chroma_private_store().as_retriever(search_kwargs={"k": 2})
@@ -109,22 +126,33 @@ class LangchainService:
         return create_retrieval_chain(retriever, combine_docs_chain)
 
     def generate_answer(self, query: str, is_logged_in: bool = False):
-        """Combine DB query results and document RAG into a merged response."""
+        """
+        Hybrid answer generation:
+        - Authenticated users: queries both live DB (via SQL chain) and private vector docs.
+        - Public / guest users: queries public vector docs only (no DB access).
+        Both contexts are synthesized into a final consolidated response.
+        """
         sql_response = ""
+        # Only authenticated employees are allowed to trigger text-to-SQL DB queries
         if is_logged_in:
             response = self.sql_chain().invoke({"question": query})
             sql_response = response.content
 
         print("SQL Response:", sql_response)
+        # Vector retrieval for uploaded documents (PDFs, docs, URLs)
         vector_chain = self.vector_chain(is_logged_in)
         vector_response = vector_chain.invoke({"input": query})
         print("VECTOR Response:", vector_response)
 
+        # Merge database rows and document knowledge into one cohesive response
         merged_response = self.final_answer(sql_response, vector_response["answer"])
         return {"answer": merged_response}
 
     def final_answer(self, sql_response, vector_response):
-        """Synthesize SQL and document results into a single non-redundant answer."""
+        """
+        Synthesis pass: reconciles information from SQL database results and document RAG,
+        filtering out duplicate info and presenting a clean, cohesive answer to the user.
+        """
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -146,9 +174,13 @@ class LangchainService:
         return final_answer
 
     def _delete_documents(self, file_path):
-        """Purge indexed document chunks by source path from vector stores."""
+        """
+        Evicts all embedded chunks associated with a specific file path from ChromaDB.
+        Called when a document is deleted to ensure vector search results stay in sync.
+        """
         public_vector_store = self.chroma_public_store()
         private_vector_store = self.chroma_private_store()
         public_vector_store.delete(where={"source": file_path})
         private_vector_store.delete(where={"source": file_path})
         return True
+
