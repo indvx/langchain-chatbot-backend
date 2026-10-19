@@ -5,7 +5,11 @@ from sql.models.employees import Employee as EmployeeModel
 
 
 
+# Marshmallow schemas for serializing SQLAlchemy Employee ORM models to plain dictionaries.
+# Specifically used to bridge ORM instances into Pydantic models (e.g. in AuthMiddleware).
+
 class LoggedInEmployeeSchema(SQLAlchemyAutoSchema):
+    """Serializes essential employee identity fields for request auth context."""
     class Meta:
         model = EmployeeModel
         load_instance = True
@@ -20,6 +24,7 @@ class LoggedInEmployeeSchema(SQLAlchemyAutoSchema):
 
 
 class EmployeeSchema(SQLAlchemyAutoSchema):
+    """Full employee serialization including timestamps and nested address relations."""
     class Meta:
         model = EmployeeModel
         load_instance = True
@@ -38,6 +43,7 @@ class EmployeeSchema(SQLAlchemyAutoSchema):
 
 
 class CreateEmployeeSchema(SQLAlchemyAutoSchema):
+    """Restricted schema for extracting signup fields (name, email, password)."""
     class Meta:
         model = EmployeeModel
         load_instance = True
@@ -51,6 +57,7 @@ class CreateEmployeeSchema(SQLAlchemyAutoSchema):
 
 
 class ReadAllEmployeeSchema(SQLAlchemyAutoSchema):
+    """Schema for serializing employee lists with addresses for administrative views."""
     class Meta:
         model = EmployeeModel
         load_instance = True
@@ -66,4 +73,5 @@ class ReadAllEmployeeSchema(SQLAlchemyAutoSchema):
             "updated_at",
             "addresses",
         )
+
 

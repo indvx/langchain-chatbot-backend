@@ -9,6 +9,9 @@ import db
 from core.config import settings
 
 
+# Background document ingestion and vectorization service.
+# Watches the documents directory, splits text into overlapping chunks,
+# generates embeddings, and indexes them in ChromaDB vector stores.
 class DocumentIngestionService:
     def __init__(self):
         self.langchain_service = LangchainService()
@@ -16,6 +19,7 @@ class DocumentIngestionService:
         self.__db = db.get_db()
 
         self.data_folder = str(settings.document_dir_name).strip()
+        # 1000 chars per chunk with 100 char overlap preserves context across sentence boundaries
         self.chunk_size = 1000
         self.chunk_overlap = 100
 
@@ -23,7 +27,14 @@ class DocumentIngestionService:
         self.private_vector_store = self.langchain_service.chroma_private_store()
 
     def ingest_file(self, path: str, type: str = "public") -> bool:
-        """Parse file into chunks and write embeddings to public/private vector stores."""
+        """
+        Parses a document, splits it into semantic chunks, and persists embeddings to ChromaDB.
+        
+        Routing logic:
+        - 'private': indexed into private_vector_store only (accessible exclusively to authenticated employees).
+        - 'public': indexed into both private AND public stores so logged-in employees have a unified view
+          without needing to query both collections at query time.
+        """
         try:
             logger.info(f"Starting ingestion for file: {path} | Type: {type}")
 
@@ -45,6 +56,7 @@ class DocumentIngestionService:
                 logger.info("Uploading to private vector store...")
                 self.private_vector_store.add_documents(documents=documents, ids=uuids)
             else:
+                # Mirror public documents to private store so authenticated queries get full coverage
                 logger.info("Uploading to both public and private vector stores...")
                 self.private_vector_store.add_documents(documents=documents, ids=uuids)
                 self.public_vector_store.add_documents(documents=documents, ids=uuids)
@@ -57,12 +69,19 @@ class DocumentIngestionService:
             return False
 
     def main_loop(self) -> bool:
-        """Scan documents folder for new files, ingest them, and prefix with '_' on completion."""
+        """
+        Scheduled polling task (executed every 10 seconds via BackgroundScheduler).
+        
+        Files prefixed with '_' are already embedded in ChromaDB.
+        We only pick up newly uploaded raw files here, embed them, then prepend '_' 
+        to the filename on disk and in the DB so subsequent scheduler ticks skip them.
+        """
         logger.info("Background scheduler main_loop started.")
         processed_files = []
 
         try:
             for filename in os.listdir(self.data_folder):
+                # Ignore files already processed in prior runs
                 if not filename.startswith("_"):
                     file_path = os.path.join(self.data_folder, filename)
                     doc_type = "private" if filename.startswith("private") else "public"
@@ -76,7 +95,7 @@ class DocumentIngestionService:
                         )
                         continue
 
-                    # Mark file as processed in DB
+                    # Update file record in DB to reflect the new '_' filename
                     new_filename = "_" + filename
                     document = document_crud._get_document_by_dir_name(
                         self.__db, filename
@@ -89,7 +108,7 @@ class DocumentIngestionService:
                         self.__db.refresh(document)
                         logger.debug(f"Updated DB record for file: {filename}")
 
-                    # Rename processed file to prevent re-ingestion
+                    # Rename file on disk to mark ingestion as complete
                     new_file_path = os.path.join(self.data_folder, new_filename)
                     os.rename(file_path, new_file_path)
                     processed_files.append(file_path)
@@ -102,3 +121,4 @@ class DocumentIngestionService:
         except Exception as e:
             logger.error(f"Error in main_loop: {str(e)}", exc_info=True)
             return False
+

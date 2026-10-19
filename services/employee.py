@@ -6,12 +6,17 @@ from core.config import settings
 from middleware.auth_middleware import get_current_employee
 
 
+# Employee account and authentication business logic service.
+# Manages registrations, login sessions, role validations, and profile modifications.
 class EmployeeService:
     def __init__(self):
         self.__db = db.get_db()
 
     def create_employee(self, employee_data):
-        """Create new employee record after ensuring unique email."""
+        """
+        Registers a new employee.
+        Verifies that the requested email address is not already registered before saving.
+        """
         try:
             employee = employee_crud.get_employee_by_email(
                 self.__db, employee_data.email
@@ -24,7 +29,10 @@ class EmployeeService:
             raise LookupError(str(e))
 
     def login(self, employee_data):
-        """Verify email & password credentials and return a signed JWT token."""
+        """
+        Authenticates an employee using email and password.
+        On success, issues a signed JWT token with a 24-hour expiration window.
+        """
         try:
             employee_name = employee_data.email
             password = employee_data.password
@@ -32,6 +40,7 @@ class EmployeeService:
             token = None
 
             if employee:
+                # Validate against bcrypt salt and hash
                 if employee_crud._check_password(password, employee.password):
                     token = jwt.encode(
                         {
@@ -54,7 +63,7 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def get_current_employee(self):
-        """Return the active employee from request auth context."""
+        """Returns the logged-in employee context stored in the current request scope."""
         try:
             employee = get_current_employee()
             return employee
@@ -62,7 +71,7 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def read_employee(self, id: int):
-        """Find single employee record by ID."""
+        """Fetches detailed profile for an employee by primary key ID."""
         try:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if not employee:
@@ -79,7 +88,7 @@ class EmployeeService:
         limit: int = 10,
         page: int = 1,
     ):
-        """Fetch paginated list of employee records."""
+        """Returns a paginated list of employees with metadata envelope."""
         try:
             if limit < 1:
                 limit = 10
@@ -104,7 +113,10 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def delete_employee(self, id: int):
-        """Delete employee record (admin or owner only)."""
+        """
+        Removes an employee record.
+        Restricted to admins or the employee deleting their own account.
+        """
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -124,7 +136,12 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def update_employee(self, id: int, data):
-        """Update employee profile and handle role promotion authorization."""
+        """
+        Updates an employee profile with safety guardrails:
+        - Only admins or the owner can edit the account.
+        - Checks for email collisions if updating the email address.
+        - Prevents non-admins from elevating their role to 'admin'.
+        """
         try:
             logged_in_employee = get_current_employee()
             if not logged_in_employee:
@@ -134,9 +151,11 @@ class EmployeeService:
             if not employee:
                 raise ValueError("Please provide valid details.")
 
+            # Authorization guard: owner or admin
             if logged_in_employee.employee_type != "admin" and employee.id != id:  # type: ignore
                 raise PermissionError("Access denied")
 
+            # Check that new email is not taken by another user
             if hasattr(data, "email") and data.email != "":
                 employee_by_email = employee_crud.get_employee_by_email(
                     self.__db, data.email
@@ -144,6 +163,7 @@ class EmployeeService:
                 if employee_by_email and employee.id != employee_by_email.id:  # type: ignore
                     raise ValueError("Provided email already exists.")
 
+            # Privilege escalation guard: only existing admins can grant admin status
             if hasattr(data, "employee_type") and data.employee_type:
                 if (
                     data.employee_type == "admin"
@@ -157,3 +177,4 @@ class EmployeeService:
             return employee
         except Exception as e:
             raise ProcessLookupError(str(e))
+
