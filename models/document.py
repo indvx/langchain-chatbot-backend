@@ -9,7 +9,7 @@ class Document(BaseModel):
     Representation of a stored document in the system.
     original_path: the initial uploaded filename (as provided by the user).
     doc_path: the internal storage filename in 'documents/' (prefixed with '_' once embedded).
-    type: access classification ('public' or 'private').
+    type: document category or tag.
     """
     id: Optional[int] = None
     original_path: str
@@ -35,6 +35,6 @@ class DocumentList(BaseModel):
 class URLUpload(BaseModel):
     """Request payload for ingesting web content via URL instead of a file upload."""
     url: str
-    type: str
+    type: Optional[str] = "public"
 
 

@@ -3,7 +3,7 @@ from typing import Optional, List
 from models.employee_addresses import EmployeeAddress
 
 
-# Pydantic schemas for employee account management, authentication, and responses.
+# Pydantic schemas for employee account management and responses.
 
 class Employee(BaseModel):
     """Payload schema used when registering a new employee or updating details."""
@@ -24,26 +24,6 @@ class ReadEmployee(BaseModel):
     email: EmailStr
     employee_type: Optional[str] = ''
     addresses: List[EmployeeAddress] = []
-
-
-class EmployeeLogin(BaseModel):
-    """Payload schema for POST /employee/login authentication."""
-    email: EmailStr
-    password: str
-
-
-class LoggedInEmployee(BaseModel):
-    """
-    Decoded employee identity populated by AuthMiddleware from JWT claims
-    and attached to the current request lifecycle.
-    """
-    id: int
-    email: str
-    name: str
-    employee_type: str
-
-    class Config:
-        from_attributes = True
 
 
 class Meta(BaseModel):

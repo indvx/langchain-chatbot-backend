@@ -1,15 +1,9 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException
 from models.employee_addresses import EmployeeAddress
 from services.employee_address import EmployeeAddressService
 from fastapi.responses import JSONResponse
-from typing import Any
-from services.jwt_service import JWTBearer
-from fastapi.requests import Request
 
-
-# Employee address management API router.
-# Handles postal/residential addresses attached to employees.
-# All operations require a valid JWT Bearer token and enforce ownership checks.
+# Employee address management API router
 router = APIRouter(
     prefix="/employee",
     tags=["Employee"],
@@ -21,13 +15,8 @@ router = APIRouter(
 def create_employee_address(
     employee_id: int,
     address: EmployeeAddress,
-    d: Any = Depends(JWTBearer())
 ) -> JSONResponse:
-    """
-    Attaches a new address to an employee.
-    If 'is_default' is set to True, any prior default address for this employee
-    is automatically demoted to False to maintain exactly one default.
-    """
+    """Attaches a new address to an employee."""
     try:
         response = EmployeeAddressService().create_employee_address(employee_id, address)
     except Exception as e:
@@ -42,12 +31,8 @@ def create_employee_address(
 @router.get("/{employee_id:int}/address/list", summary="Get employee address list")
 def get_employee_address_list(
     employee_id: int,
-    d: Any = Depends(JWTBearer())
 ):
-    """
-    Retrieves all registered addresses for a specific employee.
-    Restricted to the employee themselves or administrators.
-    """
+    """Retrieves all registered addresses for a specific employee."""
     try:
         response = EmployeeAddressService().read_employee_addresses(employee_id)
     except Exception as e:
@@ -59,13 +44,8 @@ def get_employee_address_list(
 @router.delete("/address/{id:int}", summary="Delete employee address by ID")
 def delete_employee_address(
     id: int,
-    d: Any = Depends(JWTBearer())
 ):
-    """
-    Deletes an address by its ID.
-    Rejects deletion if the address is currently marked as default
-    (a replacement default address must be designated first).
-    """
+    """Deletes an address by its ID."""
     try:
         response = EmployeeAddressService().delete_employee_address(id)
     except Exception as e:

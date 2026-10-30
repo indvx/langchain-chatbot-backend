@@ -7,7 +7,7 @@ from sqlalchemy import and_, asc, desc, func, or_
 # Database CRUD operations for Document records.
 # Handles metadata persistence, file path lookups, and multi-field search queries.
 
-def create_doc(db: Session, data: dict, employee_id: int):
+def create_doc(db: Session, data: dict, employee_id: int = None):
     """
     Persists a new document record linked to the uploading employee.
     Initializes doc_path to the raw storage path before ingestion processing.

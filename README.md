@@ -1,36 +1,34 @@
-# 🧠 LangChain Chatbot Backend
+# LangChain Chatbot Backend
 
-A production-ready AI Chatbot Backend built with **FastAPI**, **LangChain**, **ChromaDB**, and **SQLAlchemy**. This service powers context-aware RAG (Retrieval-Augmented Generation) conversations using multi-provider LLMs (Google Gemini & OpenAI), features automated document ingestion, supports multi-channel integrations (WhatsApp Cloud API & Telegram Bot API), and provides JWT-based role authentication for administrative and employee workflows.
+An AI Chatbot Backend built with **FastAPI**, **LangChain**, **ChromaDB**, and **SQLAlchemy**. This service powers context-aware RAG (Retrieval-Augmented Generation) conversations using multi-provider LLMs (Google Gemini & OpenAI), features automated document ingestion, supports multi-channel integrations (WhatsApp Cloud API & Telegram Bot API), and provides relational management for employees and documents.
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 - **Multi-Provider LLM Integration**: Flexible switching between Google Gemini and OpenAI models for chat generation and vector embeddings via configuration.
-- **RAG (Retrieval-Augmented Generation)**: Vector search powered by **ChromaDB** with isolated public and private document storage.
-- **Automated Document Ingestion Pipeline**: Background directory monitor using **APScheduler** that automatically detects, parses (PDF, DOCX, TXT, Web URLs), chunks, and embeds documents.
+- **Hybrid RAG & Text-to-SQL**: Blends document knowledge retrieval powered by **ChromaDB** with relational Text-to-SQL database querying.
+- **Automated Document Ingestion Pipeline**: Background directory monitor using **APScheduler** that automatically detects, parses (PDF, DOCX, TXT, Web URLs), chunks, and embeds documents into ChromaDB.
 - **Multi-Channel Messaging Integrations**:
   - **WhatsApp Cloud API**: Meta webhook verification and automated reply handling.
   - **Telegram Bot API**: Telegram webhook integration for instant chatbot replies.
-- **Role-Based Authentication (RBAC)**: JWT authentication middleware supporting `admin` and `employee` roles to control access to private documents and sensitive records.
 - **Database & Migrations**: **SQLAlchemy ORM** backed by MySQL, with **Alembic** schema migration support.
 - **Type-Safe Configuration**: Environment management powered by `pydantic-settings`.
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10+)
 - **AI & RAG Orchestration**: [LangChain](https://www.langchain.com/), `langchain-google-genai`, `langchain-openai`, `langchain-chroma`
 - **Vector Database**: [ChromaDB](https://www.trychroma.com/)
 - **Database & Migration**: MySQL, [SQLAlchemy](https://www.sqlalchemy.org/), [Alembic](https://alembic.sqlalchemy.org/)
-- **Authentication**: PyJWT (Bearer token validation)
 - **Background Tasks**: APScheduler
 - **Configuration**: Pydantic v2 & `pydantic-settings`
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 langchain-chatbot-backend/
@@ -40,27 +38,24 @@ langchain-chatbot-backend/
 ├── alembic/                       # Database migration scripts & env setup
 ├── core/
 │   └── config.py                  # Pydantic BaseSettings configuration
-├── middleware/
-│   └── auth_middleware.py         # JWT authentication & request scope middleware
 ├── models/                        # Pydantic schemas for request validation & API models
 │   ├── chat_bot.py
 │   ├── document.py
 │   ├── employee_addresses.py
 │   └── employees.py
 ├── routers/                       # FastAPI router endpoints
-│   ├── address.py
-│   ├── chat_bot.py
-│   ├── document.py
-│   ├── employees.py
-│   ├── telegram.py
-│   └── whatsapp.py
+│   ├── address.py                 # Employee address management endpoints
+│   ├── chat_bot.py                # Conversational AI QA endpoints
+│   ├── document.py                # Document upload and ingestion endpoints
+│   ├── employees.py               # Employee profile and listing endpoints
+│   ├── telegram.py                # Telegram webhook listener
+│   └── whatsapp.py                # WhatsApp Cloud API webhook listener
 ├── services/                      # Core business logic & AI orchestration
 │   ├── document.py
 │   ├── document_ingestion_service.py
 │   ├── document_reader.py
 │   ├── employee.py
 │   ├── employee_address.py
-│   ├── jwt_service.py
 │   ├── langchain_service.py
 │   ├── llm_service.py
 │   ├── telegram_service.py
@@ -78,7 +73,7 @@ langchain-chatbot-backend/
 
 ---
 
-## ⚙️ Environment Configuration
+## Environment Configuration
 
 Copy `.env.example` to `.env` and fill in your credentials:
 
@@ -101,8 +96,6 @@ cp .env.example .env
 | **META_GRAPH_API_URL** | Meta Graph API endpoint URL | `https://graph.facebook.com/v22.0` |
 | **TELEGRAM_BOT_TOKEN** | Telegram Bot API token from BotFather | `123456789:ABC...` |
 | **TELEGRAM_API_URL** | Telegram API base URL | `https://api.telegram.org` |
-| **JWT_SECRET_KEY** | Secret key for signing JWT tokens | `your_super_secret_key` |
-| **JWT_ALGORITHM** | JWT signature algorithm | `HS256` |
 | **DB_CONNECTION** | Database driver connection string | `mysql+pymysql` |
 | **DB_HOST** | MySQL database host | `localhost` |
 | **DB_PORT** | MySQL port | `3306` |
@@ -113,12 +106,11 @@ cp .env.example .env
 
 ---
 
-## ⚡ Installation & Setup
+## Installation & Setup
 
 ### 1. Clone Repository & Prepare Virtual Environment
 
 ```bash
-git clone https://github.com/DilipGoud03/langchain-chatbot-backend.git
 cd langchain-chatbot-backend
 
 # Create virtual environment
@@ -152,20 +144,14 @@ Launch the server with Uvicorn:
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Alternatively, use FastAPI CLI:
-
-```bash
-fastapi dev main.py
-```
-
 The interactive API documentation (Swagger UI) will be available at:
-👉 **`http://localhost:8000/docs`**
+**`http://localhost:8000/docs`**
 
 ---
 
-## 📱 Messaging Integrations Setup Guide
+## Messaging Integrations Setup Guide
 
-### 🤖 Telegram Bot Setup (via BotFather)
+### Telegram Bot Setup (via BotFather)
 
 1. **Create a Telegram Bot**:
    - Open Telegram and search for [@BotFather](https://t.me/BotFather).
@@ -196,17 +182,17 @@ The interactive API documentation (Swagger UI) will be available at:
 
 ---
 
-### 💬 WhatsApp Cloud API Setup (Meta)
+### WhatsApp Cloud API Setup (Meta)
 
 1. **Set Up Meta Developer Application**:
    - Log in to [Meta for Developers](https://developers.facebook.com/).
-   - Go to **My Apps** → **Create App** → Select **Other** / **Business**.
+   - Go to **My Apps** -> **Create App** -> Select **Other** / **Business**.
    - Under **Add products to your app**, select **WhatsApp** and click **Set up**.
 
 2. **Obtain API Credentials**:
-   - In the left menu, navigate to **WhatsApp** → **API Setup**.
-   - Copy the **Temporary Access Token** (or create a permanent System User Token) → set as `META_ACCESS_TOKEN`.
-   - Copy the **Phone Number ID** → set as `META_PHONE_NUMBER_ID`.
+   - In the left menu, navigate to **WhatsApp** -> **API Setup**.
+   - Copy the **Temporary Access Token** (or create a permanent System User Token) -> set as `META_ACCESS_TOKEN`.
+   - Copy the **Phone Number ID** -> set as `META_PHONE_NUMBER_ID`.
 
 3. **Configure Environment Variables**:
    Update your `.env` file with your Meta credentials:
@@ -218,65 +204,48 @@ The interactive API documentation (Swagger UI) will be available at:
    ```
 
 4. **Configure Meta Webhook**:
-   - Go to **WhatsApp** → **Configuration** in the Meta dashboard.
+   - Go to **WhatsApp** -> **Configuration** in the Meta dashboard.
    - Click **Edit** under Webhook:
      - **Callback URL**: `https://<your-public-domain>.ngrok-free.app/whatsapp/webhook`
      - **Verify Token**: Must match `META_VERIFY_TOKEN` (e.g. `my_secure_custom_verify_token`).
    - Click **Verify and Save** (Meta triggers a verification request to `/whatsapp/webhook`).
    - Under **Webhook fields**, click **Manage** and subscribe to **`messages`**.
 
-5. **Verify**:
-   - Add your test phone number under **WhatsApp API Setup**.
-   - Send a message to the Meta test number from your WhatsApp account to receive automated AI answers.
-
 ---
 
-## 📡 API Endpoints Overview
+## API Endpoints Overview
 
-### 💬 Chatbot & RAG
-- `POST /chat-bot/` - Send query to chatbot; retrieves context from vector database and generates answers.
+### Chatbot & QA
+- `POST /chat-bot/` - Send conversational query; executes hybrid Text-to-SQL and document vector search.
 
-### 📄 Document Management
-- `GET /document/` - List paginated document records (supports `filter`, `type`, `limit`, `page`).
-- `POST /document/` - Upload document file (`PDF`, `DOCX`, `TXT`) for public or private ingestion.
-- `POST /document/url` - Ingest web page content from external URL.
-- `DELETE /document/{id}` - Delete document record and purge vectors.
+### Document Management
+- `POST /doc/upload` - Upload document file (`PDF`, `DOCX`, `TXT`) for automated vector ingestion.
+- `POST /doc/url/upload` - Ingest web page content from external URL.
+- `GET /doc/list` - List paginated document records (supports `filter`, `type`, `limit`, `page`).
+- `DELETE /doc/{id}` - Delete document record, remove file from disk, and purge embeddings from ChromaDB.
 
-### 👤 Employee Management & Auth
-- `POST /employees/` - Register a new employee record.
-- `POST /employees/login` - Authenticate employee & generate JWT access token.
-- `GET /employees/` - List employees (Admin only).
-- `GET /employees/{id}` - Get employee details.
-- `PUT /employees/{id}` - Update employee profile.
-- `DELETE /employees/{id}` - Delete employee record.
+### Employee Management
+- `POST /employee` or `POST /employee/signup` - Register a new employee record.
+- `GET /employee/list` - List paginated employee records (supports `filter`, `limit`, `page`).
+- `GET /employee/{id}` - Get single employee details with associated addresses.
+- `PUT /employee/{id}` - Update employee profile.
+- `DELETE /employee/{id}` - Delete employee record.
 
-### 📍 Employee Addresses
-- `GET /employee-addresses/` - List employee addresses.
-- `POST /employee-addresses/` - Add employee address.
-- `PUT /employee-addresses/{id}` - Update address details.
-- `DELETE /employee-addresses/{id}` - Remove address.
+### Employee Addresses
+- `POST /employee/{employee_id}/address` - Add new address for an employee.
+- `GET /employee/{employee_id}/address/list` - List all addresses attached to an employee.
+- `DELETE /employee/address/{id}` - Remove an address by ID.
 
-### 📲 Messaging Webhooks
+### Messaging Webhooks
 - `GET /whatsapp/webhook` - Meta webhook verification handshake.
 - `POST /whatsapp/webhook` - Receive incoming WhatsApp messages and respond via Meta Graph API.
 - `POST /telegram/webhook` - Handle incoming Telegram updates and trigger bot replies.
 
 ---
 
-## 🧪 Quick Usage Example
+## Quick Usage Example
 
-### 1. Employee Login
-```bash
-curl -X 'POST' \
-  'http://localhost:8000/employees/login' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "email": "employee@example.com",
-    "password": "yourpassword"
-  }'
-```
-
-### 2. Send Chat Query
+### 1. Send Chat Query
 ```bash
 curl -X 'POST' \
   'http://localhost:8000/chat-bot/' \
@@ -286,8 +255,16 @@ curl -X 'POST' \
   }'
 ```
 
+### 2. Upload Document
+```bash
+curl -X 'POST' \
+  'http://localhost:8000/doc/upload' \
+  -F 'file=@handbook.pdf' \
+  -F 'type=public'
+```
+
 ---
 
-## 📄 License
+## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.

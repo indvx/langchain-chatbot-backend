@@ -14,7 +14,7 @@ def get_employee_by_id(db: Session, employee_id: int) -> Employee:
 
 
 def get_employee_by_email(db: Session, email: str) -> Employee:
-    """Lookup an employee by email address for authentication and duplicate checks."""
+    """Lookup an employee by email address for duplicate checks."""
     return db.query(Employee).filter(Employee.email == email).first()
 
 

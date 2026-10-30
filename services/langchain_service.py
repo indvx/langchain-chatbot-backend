@@ -30,21 +30,21 @@ class LangchainService:
         self.embeddings = self.llm_service.get_embedding_model()
         self._utility_service = UtilityService()
 
-    def chroma_public_store(self):
-        """ChromaDB collection for public documents accessible to anonymous users."""
+    def chroma_store(self):
+        """ChromaDB collection for document embeddings."""
         return Chroma(
             collection_name="example_collection",
             embedding_function=self.embeddings,
             persist_directory="./vector_db/chroma_langchain_db",
         )
 
+    def chroma_public_store(self):
+        """Alias for chroma_store."""
+        return self.chroma_store()
+
     def chroma_private_store(self):
-        """ChromaDB collection containing both private documents and mirrored public documents."""
-        return Chroma(
-            collection_name="example_private_collection",
-            embedding_function=self.embeddings,
-            persist_directory="./vector_db/chroma_langchain_db",
-        )
+        """Alias for chroma_store."""
+        return self.chroma_store()
 
     def sql_chain(self):
         """
@@ -97,19 +97,9 @@ class LangchainService:
         )
         return chain
 
-    def vector_chain(self, is_logged_in: bool = False):
-        """
-        Builds document RAG chain based on caller authentication:
-        - Logged-in users retrieve from private store (which includes all company docs).
-        - Anonymous / public users retrieve only from public store.
-        Pulls top 2 most relevant chunks (k=2) to balance context quality with token usage.
-        """
-        if is_logged_in:
-            print("Employee is Logged-In")
-            retriever = self.chroma_private_store().as_retriever(search_kwargs={"k": 2})
-        else:
-            print("Employee is Logged-Out")
-            retriever = self.chroma_public_store().as_retriever(search_kwargs={"k": 2})
+    def vector_chain(self):
+        """Builds document RAG chain over indexed documents in ChromaDB."""
+        retriever = self.chroma_store().as_retriever(search_kwargs={"k": 2})
 
         rag_prompt = ChatPromptTemplate.from_messages(
             [
@@ -125,24 +115,18 @@ class LangchainService:
         combine_docs_chain = create_stuff_documents_chain(self.llm, rag_prompt)
         return create_retrieval_chain(retriever, combine_docs_chain)
 
-    def generate_answer(self, query: str, is_logged_in: bool = False):
-        """
-        Hybrid answer generation:
-        - Authenticated users: queries both live DB (via SQL chain) and private vector docs.
-        - Public / guest users: queries public vector docs only (no DB access).
-        Both contexts are synthesized into a final consolidated response.
-        """
+    def generate_answer(self, query: str, is_logged_in: bool = True):
+        """Generates hybrid answer from database queries and document embeddings."""
         sql_response = ""
-        # Only authenticated employees are allowed to trigger text-to-SQL DB queries
-        if is_logged_in:
+        try:
             response = self.sql_chain().invoke({"question": query})
             sql_response = response.content
+        except Exception as e:
+            print("SQL Chain error:", str(e))
 
-        print("SQL Response:", sql_response)
-        # Vector retrieval for uploaded documents (PDFs, docs, URLs)
-        vector_chain = self.vector_chain(is_logged_in)
+        # Vector retrieval for uploaded documents
+        vector_chain = self.vector_chain()
         vector_response = vector_chain.invoke({"input": query})
-        print("VECTOR Response:", vector_response)
 
         # Merge database rows and document knowledge into one cohesive response
         merged_response = self.final_answer(sql_response, vector_response["answer"])
@@ -174,13 +158,8 @@ class LangchainService:
         return final_answer
 
     def _delete_documents(self, file_path):
-        """
-        Evicts all embedded chunks associated with a specific file path from ChromaDB.
-        Called when a document is deleted to ensure vector search results stay in sync.
-        """
-        public_vector_store = self.chroma_public_store()
-        private_vector_store = self.chroma_private_store()
-        public_vector_store.delete(where={"source": file_path})
-        private_vector_store.delete(where={"source": file_path})
+        """Evicts all embedded chunks associated with a file path from ChromaDB."""
+        vector_store = self.chroma_store()
+        vector_store.delete(where={"source": file_path})
         return True
 
