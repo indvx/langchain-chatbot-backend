@@ -15,7 +15,7 @@ router = APIRouter(
 @router.post('/signup', summary="Create new employee")
 def create_employee(
     employee_: Employee,
-    service: t.Any = Depends(EmployeeService())
+    service: t.Any = Depends(EmployeeService)
     ) -> JSONResponse:
     """Create a new employee."""
     try:
@@ -35,7 +35,7 @@ def get_employees(
     order_direction: t.Literal['desc', 'asc'] = 'desc',
     limit: int = 10,
     page: int = 1,
-    service: t.Any = Depends(EmployeeService())
+    service: t.Any = Depends(EmployeeService)
 ):
     """List employees with pagination and optional search filter."""
     try:
@@ -53,7 +53,7 @@ def get_employees(
 
 
 @router.get('/{id:int}', response_model=ReadEmployee)
-def get_employee(id: int, service: t.Any = Depends(EmployeeService())):
+def get_employee(id: int, service: t.Any = Depends(EmployeeService)):
     """Get an employee by ID with their addresses."""
     try:
         response = service.read_employee(id)
@@ -66,7 +66,7 @@ def get_employee(id: int, service: t.Any = Depends(EmployeeService())):
 def update_employee(
     id: int,
     data: Employee,
-    service: t.Any = Depends(EmployeeService())
+    service: t.Any = Depends(EmployeeService)
 ):
     """Update employee details by ID."""
     try:
@@ -77,7 +77,7 @@ def update_employee(
 
 
 @router.delete('/{id:int}')
-def delete_employee(id: int, service: t.Any = Depends(EmployeeService())):
+def delete_employee(id: int, service: t.Any = Depends(EmployeeService)):
     """Delete an employee by ID."""
     try:
         response = service.delete_employee(id)

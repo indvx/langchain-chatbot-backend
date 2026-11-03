@@ -23,7 +23,7 @@ def upload_document(
     file: UploadFile = File(...),
     type: Literal['public'] = Form(default='public'),
     employee_id: Optional[int] = Form(default=None),
-    service: t.Any = Depends(DocumentService())
+    service: t.Any = Depends(DocumentService)
 
 ):
     """Upload a file (PDF, DOCX, TXT) for vector indexing."""
@@ -42,7 +42,7 @@ def upload_document(
 def upload_url_document(
     data: URLUpload, 
     employee_id: Optional[int] = None,
-    service: t.Any = Depends(DocumentService())
+    service: t.Any = Depends(DocumentService)
     ):
     """Ingest content from a web URL."""
     try:
@@ -61,7 +61,7 @@ def read_documents(
     limit: int = 10,
     type: str = 'all',
     page: int = 1,
-    service: t.Any = Depends(DocumentService())
+    service: t.Any = Depends(DocumentService)
 ):
     """List documents with pagination and optional search filter."""
     try:
@@ -82,7 +82,7 @@ def read_documents(
 @router.delete('/{id:int}')
 def delete_document(
     id: int,
-    service: t.Any = Depends(DocumentService())
+    service: t.Any = Depends(DocumentService)
     ):
     """Delete a document from the database, disk, and vector store."""
     try:

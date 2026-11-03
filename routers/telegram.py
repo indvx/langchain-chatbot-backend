@@ -12,7 +12,7 @@ router = APIRouter(
 
 
 @router.post("/webhook")
-async def webhook(request: Request, service: t.Any = Depends(TelegramService())):
+async def webhook(request: Request, service: t.Any = Depends(TelegramService)):
     """Handle incoming Telegram messages and send responses."""
     try:
         data = await request.json()

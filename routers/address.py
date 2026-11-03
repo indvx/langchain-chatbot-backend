@@ -15,7 +15,7 @@ router = APIRouter(
 def create_employee_address(
     employee_id: int,
     address: EmployeeAddress,
-    service: t.Any = Depends(EmployeeAddressService())
+    service: t.Any = Depends(EmployeeAddressService)
 ) -> JSONResponse:
     """Add an address for an employee."""
     try:
@@ -32,7 +32,7 @@ def create_employee_address(
 @router.get("/{employee_id:int}/address/list", summary="Get employee address list")
 def get_employee_address_list(
     employee_id: int,
-    service: t.Any = Depends(EmployeeAddressService())
+    service: t.Any = Depends(EmployeeAddressService)
 ):
     """List all addresses for an employee."""
     try:
@@ -46,7 +46,7 @@ def get_employee_address_list(
 @router.delete("/address/{id:int}", summary="Delete employee address by ID")
 def delete_employee_address(
     id: int,
-    service: t.Any = Depends(EmployeeAddressService())
+    service: t.Any = Depends(EmployeeAddressService)
 ):
     """Delete an address by ID."""
     try:

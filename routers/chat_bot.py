@@ -13,7 +13,7 @@ router = APIRouter(
 @router.post("/")
 def start_chat(
     question: ChatModel,
-    service: t.Any = Depends(LangchainService())
+    service: t.Any = Depends(LangchainService)
 ):
     """Answer a user query using document and database context."""
     try:

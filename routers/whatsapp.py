@@ -23,7 +23,7 @@ async def verify_whatsapp_webhook(
 
 
 @router.post("/webhook")
-async def reply_incoming_message(request: Request, service: t.Any = Depends(WhatsAppService())):
+async def reply_incoming_message(request: Request, service: t.Any = Depends(WhatsAppService)):
     """Receive incoming WhatsApp messages and reply via LLM."""
     body = await request.body()
     if not body:
