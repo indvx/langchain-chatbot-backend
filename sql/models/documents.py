@@ -16,15 +16,15 @@ class Document(Base):
         original_path: human-facing filename at time of upload.
         doc_path: internal path on disk under 'documents/' (renamed with '_' prefix
                   after the background scheduler successfully splits & embeds it).
-        type: visibility scope ('public' or 'private').
+        type: document category or classification tag.
     """
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)
     original_path = Column(String(255), nullable=False)
     doc_path = Column(String(255), nullable=False)
-    type = Column(String(50), unique=True, index=True, nullable=False)
+    type = Column(String(50), default="public", index=True, nullable=False)
     employee = relationship("Employee")
     created_at = Column(DateTime, default=datetime.now, nullable=False)
 

@@ -18,7 +18,7 @@ class TelegramService:
         """
         try:
             url = f"{self.__telegram_api_url}/bot{self.__telegram_token}"
-            reply_text = "👋 Hello! Welcome to the OpenAI Bot. Ask me anything!"
+            reply_text = "Hello! Welcome to the AI assistant. Ask me anything!"
             payload = {"chat_id": chat_id, "text": reply_text}
 
             response = requests.post(f"{url}/sendMessage", json=payload)
@@ -27,10 +27,7 @@ class TelegramService:
             raise ProcessLookupError(str(e))
 
     def _reply_message(self, chat_id, query: str):
-        """
-        Queries the LangChain service with user text and sends the answer back to Telegram.
-        Runs under guest/unauthenticated scope (queries public document vectors).
-        """
+        """Queries the LangChain service with user text and sends the answer back to Telegram."""
         try:
             url = f"{self.__telegram_api_url}/bot{self.__telegram_token}"
 

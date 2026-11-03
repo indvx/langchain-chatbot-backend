@@ -19,24 +19,15 @@ class DocumentIngestionService:
         self.__db = db.get_db()
 
         self.data_folder = str(settings.document_dir_name).strip()
-        # 1000 chars per chunk with 100 char overlap preserves context across sentence boundaries
         self.chunk_size = 1000
         self.chunk_overlap = 100
 
-        self.public_vector_store = self.langchain_service.chroma_public_store()
-        self.private_vector_store = self.langchain_service.chroma_private_store()
+        self.vector_store = self.langchain_service.chroma_store()
 
     def ingest_file(self, path: str, type: str = "public") -> bool:
-        """
-        Parses a document, splits it into semantic chunks, and persists embeddings to ChromaDB.
-        
-        Routing logic:
-        - 'private': indexed into private_vector_store only (accessible exclusively to authenticated employees).
-        - 'public': indexed into both private AND public stores so logged-in employees have a unified view
-          without needing to query both collections at query time.
-        """
+        """Parses a document, splits it into semantic chunks, and persists embeddings to ChromaDB."""
         try:
-            logger.info(f"Starting ingestion for file: {path} | Type: {type}")
+            logger.info(f"Starting ingestion for file: {path}")
 
             loaded_documents = self.document_reader.file_loader(path)
             text_splitter = RecursiveCharacterTextSplitter(
@@ -51,15 +42,7 @@ class DocumentIngestionService:
             logger.info(
                 f"Prepared {len(documents)} document chunks for vector storage."
             )
-
-            if type == "private":
-                logger.info("Uploading to private vector store...")
-                self.private_vector_store.add_documents(documents=documents, ids=uuids)
-            else:
-                # Mirror public documents to private store so authenticated queries get full coverage
-                logger.info("Uploading to both public and private vector stores...")
-                self.private_vector_store.add_documents(documents=documents, ids=uuids)
-                self.public_vector_store.add_documents(documents=documents, ids=uuids)
+            self.vector_store.add_documents(documents=documents, ids=uuids)
 
             logger.info(f"File successfully ingested: {path}")
             return True
@@ -73,8 +56,8 @@ class DocumentIngestionService:
         Scheduled polling task (executed every 10 seconds via BackgroundScheduler).
         
         Files prefixed with '_' are already embedded in ChromaDB.
-        We only pick up newly uploaded raw files here, embed them, then prepend '_' 
-        to the filename on disk and in the DB so subsequent scheduler ticks skip them.
+        Picks up newly uploaded raw files, embeds them, then prepends '_' 
+        to the filename on disk and in the DB.
         """
         logger.info("Background scheduler main_loop started.")
         processed_files = []
@@ -84,10 +67,9 @@ class DocumentIngestionService:
                 # Ignore files already processed in prior runs
                 if not filename.startswith("_"):
                     file_path = os.path.join(self.data_folder, filename)
-                    doc_type = "private" if filename.startswith("private") else "public"
 
-                    logger.info(f"Processing new file: {filename} | Type: {doc_type}")
-                    success = self.ingest_file(file_path, doc_type)
+                    logger.info(f"Processing new file: {filename}")
+                    success = self.ingest_file(file_path)
 
                     if not success:
                         logger.warning(

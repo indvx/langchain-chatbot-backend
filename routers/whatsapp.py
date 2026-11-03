@@ -1,4 +1,3 @@
-from alembic import config
 from fastapi import APIRouter, Query
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse

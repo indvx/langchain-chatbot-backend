@@ -37,10 +37,6 @@ class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_api_url: str
 
-    # JWT authentication configuration for employee sessions
-    jwt_secret_key: str
-    jwt_algorithm: str
-
     # Storage directory where uploaded documents are kept before & after ingestion
     document_dir_name: str
 

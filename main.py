@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from apscheduler.schedulers.background import BackgroundScheduler
 from routers import employees, whatsapp, telegram, document, chat_bot, address
-from middleware.auth_middleware import AuthMiddleware
 from services.document_ingestion_service import DocumentIngestionService
 from utils.logger import logger
 import os
@@ -33,9 +32,6 @@ app.add_middleware(
 # Local document storage: documents are saved here on upload and later served directly at /files/<filename>
 os.makedirs("documents", exist_ok=True)
 app.mount("/files", StaticFiles(directory="documents"), name="files")
-
-# Custom auth middleware to inspect Authorization header on incoming requests
-app.add_middleware(AuthMiddleware)
 
 # API route modules
 app.include_router(whatsapp.router)
