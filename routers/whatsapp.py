@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.requests import Request
 from services.whatsapp_service import WhatsAppService
 from core.config import settings
+import typing as t
 
-# WhatsApp Cloud API Webhook Router.
-# Handles Meta's verification challenge handshake (GET) and incoming chat events (POST).
 router = APIRouter(prefix="/whatsapp", tags=["What'sApp"])
 
 
@@ -16,12 +15,7 @@ async def verify_whatsapp_webhook(
     hub_challenge: str = Query(alias="hub.challenge"),
     hub_verify_token: str = Query(alias="hub.verify_token"),
 ):
-    """
-    Meta Webhook Verification Handshake.
-    When configuring the webhook in the Meta Developer Portal, Meta sends a GET request
-    with hub.mode='subscribe' and a verification token.
-    We validate the token against settings.meta_verify_token and echo back the hub.challenge as plain text.
-    """
+    """Verify webhook handshake request from Meta."""
     if hub_mode == "subscribe" and hub_verify_token == settings.meta_verify_token:
         return PlainTextResponse(content=hub_challenge, status_code=200)
     else:
@@ -29,13 +23,8 @@ async def verify_whatsapp_webhook(
 
 
 @router.post("/webhook")
-async def reply_incoming_message(request: Request):
-    """
-    Meta Webhook Event Notification Endpoint.
-    Meta posts JSON event notifications whenever a WhatsApp user sends a message.
-    Unpacks nested WhatsApp payload: entry -> changes -> value -> messages,
-    extracts the user's phone number and query text, and triggers an automated AI reply.
-    """
+async def reply_incoming_message(request: Request, service: t.Any = Depends(WhatsAppService())):
+    """Receive incoming WhatsApp messages and reply via LLM."""
     body = await request.body()
     if not body:
         raise HTTPException(status_code=400, detail="request body not found")
@@ -52,9 +41,9 @@ async def reply_incoming_message(request: Request):
                         from_number = msg["from"]
                         text = msg.get("text", {}).get("body")
 
-                        # Only reply to standard text messages (skip media, status receipts, etc.)
+                        # Process text messages only (ignore media, receipts, etc.)
                         if text:
-                            WhatsAppService().reply_whatsapp_message(from_number, text)
+                            service.reply_whatsapp_message(from_number, text)
 
         return JSONResponse(content="message: Ok", status_code=200)
 

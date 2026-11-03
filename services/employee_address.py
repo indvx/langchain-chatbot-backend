@@ -7,7 +7,7 @@ class EmployeeAddressService:
         self.__db = db.get_db()
 
     def create_employee_address(self, employee_id, data):
-        """Attaches a new address to an employee."""
+        """Add an address for an employee, resetting existing default if new one is default."""
         try:
             if data.is_default is True:
                 employee_address_crud.get_or_update_default_address(
@@ -21,7 +21,7 @@ class EmployeeAddressService:
             raise ProcessLookupError(str(e))
 
     def delete_employee_address(self, address_id):
-        """Removes an address record with default address guard."""
+        """Delete an address by ID (cannot delete a default address)."""
         try:
             address = employee_address_crud.get_employee_address_by_id(
                 self.__db, address_id
@@ -40,7 +40,7 @@ class EmployeeAddressService:
             raise ProcessLookupError(str(e))
 
     def read_employee_addresses(self, employee_id: int):
-        """Retrieves all address records associated with an employee."""
+        """Return all addresses for an employee."""
         try:
             address = employee_address_crud.get_employee_addresses(
                 self.__db, employee_id

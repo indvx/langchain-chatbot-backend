@@ -68,6 +68,8 @@ langchain-chatbot-backend/
 ├── utils/
 │   └── logger.py                  # Logger configuration
 ├── documents/                     # Local document staging directory for automated ingestion
+├── Dockerfile                     # Multi-stage container build configuration
+├── docker-compose.yml             # Docker service definitions
 └── requirements.txt               # Project dependencies
 ```
 
@@ -86,8 +88,8 @@ cp .env.example .env
 | Variable | Description | Example / Default |
 | :--- | :--- | :--- |
 | **LLM_PROVIDER** | LLM model provider (`gemini` or `openai`) | `gemini` |
-| **LLM_MODEL_NAME** | LLM model name | `gemini-2.5-flash` / `gpt-4o-mini` |
-| **LLM_EMBEDDING_MODEL** | Embedding model name | `models/embedding-001` / `text-embedding-ada-002` |
+| **LLM_MODEL_NAME** | LLM model name | `gemini-1.5-flash` / `gpt-4o-mini` |
+| **LLM_EMBEDDING_MODEL** | Embedding model name | `models/embedding-001` / `text-embedding-3-small` |
 | **GOOGLE_API_KEY** | Google Gemini API key | `AIzaSy...` |
 | **OPENAI_API_KEY** | OpenAI API key | `sk-...` |
 | **META_VERIFY_TOKEN** | WhatsApp Meta Webhook verification token | `your_custom_verify_token` |
@@ -101,7 +103,7 @@ cp .env.example .env
 | **DB_PORT** | MySQL port | `3306` |
 | **DB_USER** | MySQL username | `root` |
 | **DB_PASSWORD** | MySQL password | `password` |
-| **DB_DATABASE** | MySQL database name | `ai_chatbot_db` |
+| **DB_NAME** (or **DB_DATABASE**) | MySQL database name | `ai_chatbot_db` |
 | **DOCUMENT_DIR_NAME** | Staging folder for document ingestion | `./documents` |
 
 ---
@@ -146,6 +148,14 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 The interactive API documentation (Swagger UI) will be available at:
 **`http://localhost:8000/docs`**
+
+### 5. Run with Docker (Alternative)
+
+Build and launch the application container using Docker Compose:
+
+```bash
+docker compose up --build
+```
 
 ---
 
@@ -221,12 +231,12 @@ The interactive API documentation (Swagger UI) will be available at:
 ### Document Management
 - `POST /doc/upload` - Upload document file (`PDF`, `DOCX`, `TXT`) for automated vector ingestion.
 - `POST /doc/url/upload` - Ingest web page content from external URL.
-- `GET /doc/list` - List paginated document records (supports `filter`, `type`, `limit`, `page`).
+- `GET /doc/list` - List paginated documents (supports `filter`, `order_by`, `order_direction`, `type`, `limit`, `page`).
 - `DELETE /doc/{id}` - Delete document record, remove file from disk, and purge embeddings from ChromaDB.
 
 ### Employee Management
 - `POST /employee` or `POST /employee/signup` - Register a new employee record.
-- `GET /employee/list` - List paginated employee records (supports `filter`, `limit`, `page`).
+- `GET /employee/list` - List paginated employees (supports `filter`, `order_by`, `order_direction`, `limit`, `page`).
 - `GET /employee/{id}` - Get single employee details with associated addresses.
 - `PUT /employee/{id}` - Update employee profile.
 - `DELETE /employee/{id}` - Delete employee record.

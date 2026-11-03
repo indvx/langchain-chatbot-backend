@@ -7,7 +7,7 @@ class EmployeeService:
         self.__db = db.get_db()
 
     def create_employee(self, employee_data):
-        """Registers a new employee."""
+        """Create a new employee record."""
         try:
             employee = employee_crud.get_employee_by_email(
                 self.__db, employee_data.email
@@ -20,7 +20,7 @@ class EmployeeService:
             raise LookupError(str(e))
 
     def read_employee(self, id: int):
-        """Fetches detailed profile for an employee by primary key ID."""
+        """Fetch an employee by ID."""
         try:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if not employee:
@@ -37,7 +37,7 @@ class EmployeeService:
         limit: int = 10,
         page: int = 1,
     ):
-        """Returns a paginated list of employees with metadata envelope."""
+        """Fetch paginated employee records."""
         try:
             if limit < 1:
                 limit = 10
@@ -62,7 +62,7 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def delete_employee(self, id: int):
-        """Removes an employee record."""
+        """Delete an employee by ID."""
         try:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if employee:
@@ -75,7 +75,7 @@ class EmployeeService:
             raise ProcessLookupError(str(e))
 
     def update_employee(self, id: int, data):
-        """Updates an employee profile."""
+        """Update an employee by ID."""
         try:
             employee = employee_crud.get_employee_by_id(self.__db, id)
             if not employee:

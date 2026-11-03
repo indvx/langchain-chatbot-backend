@@ -1,0 +1,39 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: langchain-chatbot-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    # If connecting to a local MySQL instance running on the host machine,
+    # set DB_HOST=host.docker.internal in .env and uncomment the extra_hosts line below:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+  # Optional: MySQL database service
+  # Uncomment the db service below if you prefer to run MySQL in a Docker container:
+  # db:
+  #   image: mysql:8.0
+  #   container_name: langchain-chatbot-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: password
+  #     MYSQL_DATABASE: ai_chatbot_db
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+# volumes:
+#   mysql_data:

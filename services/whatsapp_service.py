@@ -4,7 +4,7 @@ from core.config import settings
 
 
 class WhatsAppService:
-    """WhatsApp Cloud API messaging integration using LangChain for responses."""
+    """Handles sending WhatsApp messages via Meta Graph API."""
 
     def __init__(self) -> None:
         self.__access_token = str(settings.meta_access_token).strip()
@@ -13,7 +13,7 @@ class WhatsAppService:
         self.__langchain_service = LangchainService()
 
     def reply_whatsapp_message(self, to: str, query: str):
-        """Processes incoming WhatsApp message and sends AI response via Meta Graph API."""
+        """Generate an answer using LangChain and send it via WhatsApp Cloud API."""
         try:
             url = f"{self.__graph_api_url}/{self.phone_number_id}/messages"
             reply_message = self.__langchain_service.generate_answer(query)
@@ -23,7 +23,6 @@ class WhatsAppService:
                 "Content-Type": "application/json",
             }
 
-            # Standard Meta Cloud API text message payload structure
             payload = {
                 "messaging_product": "whatsapp",
                 "to": to,

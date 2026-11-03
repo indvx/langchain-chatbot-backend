@@ -16,7 +16,7 @@ class DocumentService:
         self.__ingestion_service = DocumentIngestionService()
 
     def create_document(self, file, type: str = "public", employee_id: int = None):
-        """Saves file to disk and creates initial document record."""
+        """Save an uploaded file to disk and create its database record."""
         try:
             filename = (f"{file.filename}").strip()
             exist_document = document_crud._get_document_by_original_name(
@@ -53,10 +53,7 @@ class DocumentService:
         type: str = "all",
         page: int = 1,
     ):
-        """
-        Fetches paginated list of uploaded documents.
-        Enforces sane defaults for page and limit if bad values are passed.
-        """
+        """Return a paginated list of documents."""
         try:
             if limit < 1:
                 limit = 10
@@ -76,7 +73,6 @@ class DocumentService:
             all_items = docs["all_items"]
             documents = docs["docs"]
 
-            # Construct standardized pagination envelope
             meta = {
                 "current_item": len(documents),
                 "limit": limit,
@@ -90,7 +86,7 @@ class DocumentService:
             raise ProcessLookupError(str(e))
 
     def delete_document(self, id: int):
-        """Cascading delete for a document."""
+        """Delete document from database, remove file from disk, and evict embeddings."""
         try:
             file = document_crud._get_document_by_id(self.__db, id)
 
@@ -98,20 +94,19 @@ class DocumentService:
                 filepath = ""
                 _path = str(file.doc_path)
 
-                # Delete SQL record first
                 self.__db.delete(file)
 
-                # Clean up local filesystem if not an external URL
+                # Remove local file from disk if not a URL
                 if validators.url(_path):
                     filepath = _path
                 else:
                     file_path = os.path.join(self.__dir_name, _path)
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                        # Remove leading '_' so vector store lookup matches original source path
+                        # Strip leading '_' so vector search lookup matches original source path
                         filepath = file_path.replace("_", "")
 
-                # Evict embeddings from ChromaDB
+                # Delete embeddings from vector store
                 if filepath != "":
                     self.__opne_ai_model._delete_documents(filepath)
 
@@ -124,9 +119,8 @@ class DocumentService:
             raise ProcessLookupError(str(e))
 
     def create_url_document(self, url, type: str = "public", employee_id: int = None):
-        """Scrapes and ingests a remote web page directly."""
+        """Scrape web page content and store its URL in the database."""
         try:
-            # Scrape, chunk, and embed web content immediately
             self.__ingestion_service.ingest_file(url, "public")
             filename = url.split("/")[-1]
 

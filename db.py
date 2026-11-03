@@ -3,8 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from core.config import settings
 
-# Database connection URL assembled from environment variables.
-# Used by both SQLAlchemy models and LangChain's SQLDatabase utility.
+# Connection string reused by SQLAlchemy and LangChain SQLDatabase
 SQLALCHEMY_DATABASE_URL = "{}://{}:{}@{}:{}/{}".format(
     settings.db_connection,
     settings.db_user,
@@ -14,9 +13,7 @@ SQLALCHEMY_DATABASE_URL = "{}://{}:{}@{}:{}/{}".format(
     settings.db_name,
 )
 
-# pool_pre_ping=True tests connections for liveness before checkout to prevent
-# "MySQL/Postgres server has gone away" errors after periods of inactivity.
-# pool_size=5 keeps resource usage modest for this deployment.
+# pool_pre_ping ensures stale connections are reconnected automatically
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     pool_size=5,
@@ -24,21 +21,15 @@ engine = create_engine(
     isolation_level="READ COMMITTED",
 )
 
-# scoped_session gives each thread its own session instance,
-# preventing cross-thread pollution between HTTP requests and background scheduler tasks.
+# Scoped session for thread safety across background workers and API requests
 SessionLocal = sessionmaker(bind=engine)
 SessionLocal = scoped_session(SessionLocal)
 
-# Base class for all ORM models (Employees, Documents, EmployeeAddresses)
 Base = declarative_base()
 
 
 def get_db():
-    """
-    Returns an active database session.
-    Note: Always make sure callers manage transactions (.commit(), .rollback())
-    and don't leak uncommitted changes across requests.
-    """
+    """Create and return a database session."""
     db = SessionLocal()
     try:
         return db

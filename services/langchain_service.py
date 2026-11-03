@@ -18,12 +18,10 @@ from services.llm_service import LLMService
 load_dotenv()
 
 
-# Core AI orchestration service for RAG (Retrieval-Augmented Generation) and Text-to-SQL.
-# Manages ChromaDB vector stores, converts natural language queries to safe SQL,
-# and consolidates answers from both structured database tables and unstructured document files.
 class LangchainService:
+    """Handles vector search (ChromaDB) and Text-to-SQL querying."""
+
     def __init__(self):
-        # Ensure local vector database directory exists
         os.makedirs("vector_db", exist_ok=True)
         self.llm_service = LLMService()
         self.llm = self.llm_service.get_chat_model()
@@ -31,7 +29,7 @@ class LangchainService:
         self._utility_service = UtilityService()
 
     def chroma_store(self):
-        """ChromaDB collection for document embeddings."""
+        """Get the Chroma vector store instance."""
         return Chroma(
             collection_name="example_collection",
             embedding_function=self.embeddings,
@@ -39,22 +37,13 @@ class LangchainService:
         )
 
     def chroma_public_store(self):
-        """Alias for chroma_store."""
         return self.chroma_store()
 
     def chroma_private_store(self):
-        """Alias for chroma_store."""
         return self.chroma_store()
 
     def sql_chain(self):
-        """
-        Builds a Text-to-SQL chain:
-        1. create_sql_query_chain: translates user prompt into raw SQL.
-        2. clean_sql_query: strips markdown fences and LLM conversational prefixes.
-        3. QuerySQLDataBaseTool: executes the sanitized query against the live DB.
-        4. answer_prompt: synthesizes raw SQL result rows into friendly, conversational text,
-           strictly enforcing read-only behavior (no DELETE/UPDATE) and hiding sensitive internal IDs.
-        """
+        """Build a chain to convert natural language queries into SQL and interpret results."""
         db = SQLDatabase.from_uri(SQLALCHEMY_DATABASE_URL)
         execute_query = QuerySQLDataBaseTool(db=db)
         write_query = create_sql_query_chain(self.llm, db)
@@ -87,7 +76,6 @@ class LangchainService:
         )
 
         answer = answer_prompt | self.llm
-        # Assemble pipeline: generate SQL -> clean SQL -> run query -> summarize results
         chain = (
             RunnablePassthrough.assign(
                 query=write_query
@@ -98,7 +86,7 @@ class LangchainService:
         return chain
 
     def vector_chain(self):
-        """Builds document RAG chain over indexed documents in ChromaDB."""
+        """Build the document retrieval RAG chain."""
         retriever = self.chroma_store().as_retriever(search_kwargs={"k": 2})
 
         rag_prompt = ChatPromptTemplate.from_messages(
@@ -116,7 +104,7 @@ class LangchainService:
         return create_retrieval_chain(retriever, combine_docs_chain)
 
     def generate_answer(self, query: str, is_logged_in: bool = True):
-        """Generates hybrid answer from database queries and document embeddings."""
+        """Generate a combined answer from SQL and document retrieval."""
         sql_response = ""
         try:
             response = self.sql_chain().invoke({"question": query})
@@ -124,19 +112,14 @@ class LangchainService:
         except Exception as e:
             print("SQL Chain error:", str(e))
 
-        # Vector retrieval for uploaded documents
         vector_chain = self.vector_chain()
         vector_response = vector_chain.invoke({"input": query})
 
-        # Merge database rows and document knowledge into one cohesive response
         merged_response = self.final_answer(sql_response, vector_response["answer"])
         return {"answer": merged_response}
 
     def final_answer(self, sql_response, vector_response):
-        """
-        Synthesis pass: reconciles information from SQL database results and document RAG,
-        filtering out duplicate info and presenting a clean, cohesive answer to the user.
-        """
+        """Merge SQL and vector search outputs into a single response."""
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -158,7 +141,7 @@ class LangchainService:
         return final_answer
 
     def _delete_documents(self, file_path):
-        """Evicts all embedded chunks associated with a file path from ChromaDB."""
+        """Delete document chunks from Chroma by source path."""
         vector_store = self.chroma_store()
         vector_store.delete(where={"source": file_path})
         return True

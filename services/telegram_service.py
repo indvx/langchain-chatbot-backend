@@ -3,8 +3,6 @@ import requests
 from services.langchain_service import LangchainService
 
 
-# Telegram Bot API messaging integration.
-# Listens for webhook updates from Telegram and replies using LangChain AI generation.
 class TelegramService:
     def __init__(self):
         self.__telegram_token = str(settings.telegram_bot_token).strip()
@@ -12,10 +10,7 @@ class TelegramService:
         self.__langchain_service = LangchainService()
 
     def _start_app(self, chat_id):
-        """
-        Sends an introductory welcome message when a user sends the /start command.
-        Guides them on how to interact with the bot.
-        """
+        """Send the welcome message for /start."""
         try:
             url = f"{self.__telegram_api_url}/bot{self.__telegram_token}"
             reply_text = "Hello! Welcome to the AI assistant. Ask me anything!"
@@ -27,7 +22,7 @@ class TelegramService:
             raise ProcessLookupError(str(e))
 
     def _reply_message(self, chat_id, query: str):
-        """Queries the LangChain service with user text and sends the answer back to Telegram."""
+        """Generate an answer using LangChain and send it to the Telegram chat."""
         try:
             url = f"{self.__telegram_api_url}/bot{self.__telegram_token}"
 

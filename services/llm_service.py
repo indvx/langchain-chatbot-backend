@@ -3,15 +3,8 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from core.config import settings
 
 
-# LLM and Embeddings model provider abstraction.
-# Decouples LangChain logic from specific vendors so we can switch between
-# Google Gemini and OpenAI simply by changing LLM_PROVIDER in the .env file.
 class LLMService:
-    """
-    Factory for instantiating Chat and Embedding models based on config.
-    Keeps temperature at 0 to minimize hallucinations when generating SQL queries
-    and answering factual employee/document questions.
-    """
+    """Factory for chat and embedding models based on LLM_PROVIDER ('openai' or 'gemini')."""
 
     def __init__(self):
         self.__provider = str(settings.llm_provider).lower()
@@ -19,7 +12,6 @@ class LLMService:
         self.__embedding_model = str(settings.llm_embedding_model)
 
     def gemini_chat_model(self):
-        """Build Google Gemini chat model with automatic retry on transient rate limits."""
         return ChatGoogleGenerativeAI(
             model=self.__chat_model,
             temperature=0,
@@ -29,25 +21,22 @@ class LLMService:
         )
 
     def gemini_embedding_model(self):
-        """Build Google Generative AI embeddings model for ChromaDB vector operations."""
         return GoogleGenerativeAIEmbeddings(model=self.__embedding_model)
 
     def openai_chat_model(self):
-        """Build OpenAI chat model (e.g. gpt-4o, gpt-3.5-turbo) with zero temperature."""
         return ChatOpenAI(model=self.__chat_model, temperature=0, verbose=True)
 
     def openai_embedding_model(self):
-        """Build OpenAI embeddings model (e.g. text-embedding-3-small)."""
         return OpenAIEmbeddings(model=self.__embedding_model)
 
     def get_chat_model(self):
-        """Primary getter for chat LLM instance based on configured provider."""
+        """Return the configured chat model."""
         if self.__provider == "openai":
             return self.openai_chat_model()
         return self.gemini_chat_model()
 
     def get_embedding_model(self):
-        """Primary getter for embedding model instance based on configured provider."""
+        """Return the configured embedding model."""
         if self.__provider == "openai":
             return self.openai_embedding_model()
         return self.gemini_embedding_model()
