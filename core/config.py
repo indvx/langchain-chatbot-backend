@@ -30,8 +30,16 @@ class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_api_url: str
 
-    # Uploads directory
-    document_dir_name: str
+    # Storage directories
+    document_dir_name: str = "./documents"
+    vector_dir_name: str = Field(
+        default="./vector_db/chroma_langchain_db",
+        validation_alias=AliasChoices("vector_dir_name", "vector_db_dir", "chroma_db_dir"),
+    )
+    chroma_collection_name: str = Field(
+        default="example_collection",
+        validation_alias=AliasChoices("chroma_collection_name", "collection_name"),
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

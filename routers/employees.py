@@ -12,7 +12,7 @@ router = APIRouter(
 
 
 @router.post('', summary="Create new employee")
-@router.post('/signup', summary="Create new employee")
+# @router.post('/signup', summary="Create new employee")
 def create_employee(
     employee_: Employee,
     service: t.Any = Depends(EmployeeService)
@@ -24,7 +24,9 @@ def create_employee(
         raise HTTPException(status_code=400, detail=str(e))
 
     return JSONResponse(
-        status_code=200, content=f"message: {response}"
+        status_code=200, content={
+            "message": response
+        }
     )
 
 
@@ -84,6 +86,6 @@ def delete_employee(id: int, service: t.Any = Depends(EmployeeService)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return JSONResponse(content=response, status_code=200)
+    return JSONResponse(content=response, status_code=204)
 
 

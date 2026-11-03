@@ -14,6 +14,7 @@ from langchain.chains.llm import LLMChain
 from services.utility import UtilityService
 from db import SQLALCHEMY_DATABASE_URL
 from services.llm_service import LLMService
+from core.config import settings
 
 load_dotenv()
 
@@ -22,7 +23,9 @@ class LangchainService:
     """Handles vector search (ChromaDB) and Text-to-SQL querying."""
 
     def __init__(self):
-        os.makedirs("vector_db", exist_ok=True)
+        self.vector_dir = str(settings.vector_dir_name).strip()
+        self.collection_name = str(settings.chroma_collection_name).strip()
+        os.makedirs(self.vector_dir, exist_ok=True)
         self.llm_service = LLMService()
         self.llm = self.llm_service.get_chat_model()
         self.embeddings = self.llm_service.get_embedding_model()
@@ -31,9 +34,9 @@ class LangchainService:
     def chroma_store(self):
         """Get the Chroma vector store instance."""
         return Chroma(
-            collection_name="example_collection",
+            collection_name=self.collection_name,
             embedding_function=self.embeddings,
-            persist_directory="./vector_db/chroma_langchain_db",
+            persist_directory=self.vector_dir,
         )
 
     def chroma_public_store(self):

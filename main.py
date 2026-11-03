@@ -34,9 +34,9 @@ app.mount("/files", StaticFiles(directory="documents"), name="files")
 app.include_router(whatsapp.router)
 app.include_router(telegram.router)
 app.include_router(employees.router)
+app.include_router(address.router)
 app.include_router(document.router)
 app.include_router(chat_bot.router)
-app.include_router(address.router)
 
 scheduler = BackgroundScheduler()
 

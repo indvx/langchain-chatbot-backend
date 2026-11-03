@@ -6,7 +6,7 @@ import typing as t
 
 router = APIRouter(
     prefix="/employee",
-    tags=["Employee"],
+    tags=["Employee Address"],
     responses={404: {"description": "Not found"}},
 )
 
