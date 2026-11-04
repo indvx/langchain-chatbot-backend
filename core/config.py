@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     llm_provider: str
     llm_model_name: str
     llm_embedding_model: str
-    google_api_key: str
-    openai_api_key: str
+    api_key: str
+    base_url: str = Field(default="")
 
     # WhatsApp (Meta Graph API)
     meta_verify_token: str

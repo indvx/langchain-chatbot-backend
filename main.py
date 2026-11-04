@@ -41,26 +41,26 @@ app.include_router(chat_bot.router)
 scheduler = BackgroundScheduler()
 
 
-@app.on_event("startup")
-def start_scheduler():
-    """Start background job to ingest uploaded documents periodically."""
-    logger.info("Scheduler starting...")
-    # Check for new documents every 10 seconds
-    scheduler.add_job(
-        ingestion_service.main_loop,
-        'interval',
-        id='main_loop_job',
-        seconds=10
-    )
-    scheduler.start()
-    logger.info("Scheduler started successfully.")
+# @app.on_event("startup")
+# def start_scheduler():
+#     """Start background job to ingest uploaded documents periodically."""
+#     logger.info("Scheduler starting...")
+#     # Check for new documents every 10 seconds
+#     scheduler.add_job(
+#         ingestion_service.main_loop,
+#         'interval',
+#         id='main_loop_job',
+#         seconds=10
+#     )
+#     scheduler.start()
+#     logger.info("Scheduler started successfully.")
 
 
-@app.on_event("shutdown")
-def shutdown_scheduler():
-    """Stop the scheduler when shutting down."""
-    scheduler.shutdown()
-    logger.info("Scheduler stopped.")
+# @app.on_event("shutdown")
+# def shutdown_scheduler():
+#     """Stop the scheduler when shutting down."""
+#     scheduler.shutdown()
+#     logger.info("Scheduler stopped.")
 
 
 @app.get("/")
