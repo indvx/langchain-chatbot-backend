@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, File, Form, UploadFile
+from fastapi import APIRouter, HTTPException, File, Form, UploadFile, Depends
 from services.document import DocumentService
 from fastapi.responses import JSONResponse
 from typing import Literal, Optional
 from models.document import URLUpload
+import typing as t
 
-# Document management API router
 router = APIRouter(
     prefix="/doc",
     tags=["Document"],
@@ -23,13 +23,15 @@ def upload_document(
     file: UploadFile = File(...),
     type: Literal['public'] = Form(default='public'),
     employee_id: Optional[int] = Form(default=None),
+    service: t.Any = Depends(DocumentService)
+
 ):
-    """Uploads a local document for vector indexing."""
+    """Upload a file (PDF, DOCX, TXT) for vector indexing."""
     try:
         if file.content_type not in ALLOWED_TYPES:
             raise HTTPException(status_code=400, detail="This file type is not allowed")
 
-        doc = DocumentService().create_document(file, "public", employee_id)
+        doc = service.create_document(file, "public", employee_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -37,10 +39,14 @@ def upload_document(
 
 
 @router.post('/url/upload')
-def upload_url_document(data: URLUpload, employee_id: Optional[int] = None):
-    """Ingests a public web page into the vector knowledge base via URL."""
+def upload_url_document(
+    data: URLUpload, 
+    employee_id: Optional[int] = None,
+    service: t.Any = Depends(DocumentService)
+    ):
+    """Ingest content from a web URL."""
     try:
-        doc = DocumentService().create_url_document(data.url, "public", employee_id)
+        doc = service.create_url_document(data.url, "public", employee_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -54,14 +60,12 @@ def read_documents(
     order_direction: Literal['desc', 'asc'] = 'desc',
     limit: int = 10,
     type: str = 'all',
-    page: int = 1
+    page: int = 1,
+    service: t.Any = Depends(DocumentService)
 ):
-    """
-    Returns a paginated list of documents with metadata.
-    Supports filtering by filename/uploader and sorting by any valid column.
-    """
+    """List documents with pagination and optional search filter."""
     try:
-        response = DocumentService().read_documents(
+        response = service.read_documents(
             filter,
             order_by,
             order_direction,
@@ -76,14 +80,13 @@ def read_documents(
 
 
 @router.delete('/{id:int}')
-def delete_document(id: int):
-    """
-    Permanently deletes a document:
-    Removes its database record, deletes the file from disk, and purges
-    its embeddings from ChromaDB. (Restricted to admin).
-    """
+def delete_document(
+    id: int,
+    service: t.Any = Depends(DocumentService)
+    ):
+    """Delete a document from the database, disk, and vector store."""
     try:
-        response = DocumentService().delete_document(id)
+        response = service.delete_document(id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

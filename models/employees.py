@@ -3,10 +3,7 @@ from typing import Optional, List
 from models.employee_addresses import EmployeeAddress
 
 
-# Pydantic schemas for employee account management and responses.
-
 class Employee(BaseModel):
-    """Payload schema used when registering a new employee or updating details."""
     id: Optional[int] = None
     name: str
     email: EmailStr
@@ -15,10 +12,6 @@ class Employee(BaseModel):
 
 
 class ReadEmployee(BaseModel):
-    """
-    Public employee profile response.
-    Never exposes raw or hashed passwords; includes nested address records.
-    """
     id: Optional[int] = None
     name: str
     email: EmailStr
@@ -27,7 +20,6 @@ class ReadEmployee(BaseModel):
 
 
 class Meta(BaseModel):
-    """Standard pagination metadata for employee listings."""
     current_item: Optional[int] = None
     total_items: Optional[int] = None
     limit: Optional[int] = None
@@ -35,7 +27,6 @@ class Meta(BaseModel):
 
 
 class EmployeeList(BaseModel):
-    """Paginated collection of employee records returned by GET /employee."""
     meta: Meta
     employees: List[ReadEmployee] = []
 

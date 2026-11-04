@@ -8,8 +8,6 @@ sql/schemas/__pycache__
 middleware/__pycache__
 models/__pycache__
 documents
-myVenv
+venv
 vector_db
-langchain-chatbot-venv
 logs
-Dockerfile

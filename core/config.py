@@ -1,50 +1,51 @@
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-# Global environment settings loaded via pydantic-settings.
-# Values are mapped from the root .env file and validated on startup.
 class Settings(BaseSettings):
-    """
-    Central application configuration.
-    Validates required environment variables on boot so configuration
-    mistakes fail fast instead of failing midway through a request.
-    """
+    """Application settings loaded from environment or .env file."""
 
-    # PostgreSQL / MySQL connection parameters
+    # Database connection
     db_connection: str
     db_host: str
     db_port: int
     db_user: str
     db_password: str
-    db_name: str
+    db_name: str = Field(validation_alias=AliasChoices("db_name", "db_database"))
 
-    # LLM & Vector Search settings
-    # llm_provider accepts 'openai' or 'gemini' (defaults to Gemini if not set to openai)
+    # LLM & embeddings ('gemini' or 'openai')
     llm_provider: str
     llm_model_name: str
     llm_embedding_model: str
-    google_api_key: str
-    openai_api_key: str
+    api_key: str
+    base_url: str = Field(default="")
 
-    # Meta Cloud API settings for WhatsApp bot integration
-    # meta_verify_token is used for Meta's webhook challenge handshake
+    # WhatsApp (Meta Graph API)
     meta_verify_token: str
     meta_access_token: str
     meta_phone_number_id: str
     meta_graph_api_url: str
 
-    # Telegram Bot webhook integration
+    # Telegram Bot
     telegram_bot_token: str
     telegram_api_url: str
 
-    # Storage directory where uploaded documents are kept before & after ingestion
-    document_dir_name: str
+    # Storage directories
+    document_dir_name: str = "./documents"
+    vector_dir_name: str = Field(
+        default="./vector_db/chroma_langchain_db",
+        validation_alias=AliasChoices("vector_dir_name", "vector_db_dir", "chroma_db_dir"),
+    )
+    chroma_collection_name: str = Field(
+        default="example_collection",
+        validation_alias=AliasChoices("chroma_collection_name", "collection_name"),
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
 
-# Singleton instance reused across the app
 settings = Settings()

@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.employees import Employee, EmployeeList, ReadEmployee
 from services.employee import EmployeeService
 from fastapi.responses import JSONResponse
-from typing import Literal
+import typing as t
 
-# Employee management router
 router = APIRouter(
     prefix="/employee",
     tags=["Employee"],
@@ -13,16 +12,21 @@ router = APIRouter(
 
 
 @router.post('', summary="Create new employee")
-@router.post('/signup', summary="Create new employee")
-def create_employee(employee_: Employee) -> JSONResponse:
-    """Creates a new employee account."""
+# @router.post('/signup', summary="Create new employee")
+def create_employee(
+    employee_: Employee,
+    service: t.Any = Depends(EmployeeService)
+    ) -> JSONResponse:
+    """Create a new employee."""
     try:
-        response = EmployeeService().create_employee(employee_)
+        response = service.create_employee(employee_)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     return JSONResponse(
-        status_code=200, content=f"message: {response}"
+        status_code=200, content={
+            "message": response
+        }
     )
 
 
@@ -30,13 +34,14 @@ def create_employee(employee_: Employee) -> JSONResponse:
 def get_employees(
     filter: str = '',
     order_by: str = 'id',
-    order_direction: Literal['desc', 'asc'] = 'desc',
+    order_direction: t.Literal['desc', 'asc'] = 'desc',
     limit: int = 10,
     page: int = 1,
+    service: t.Any = Depends(EmployeeService)
 ):
-    """Paginated search across employee records."""
+    """List employees with pagination and optional search filter."""
     try:
-        response = EmployeeService().read_employees(
+        response = service.read_employees(
             filter,
             order_by,
             order_direction,
@@ -50,10 +55,10 @@ def get_employees(
 
 
 @router.get('/{id:int}', response_model=ReadEmployee)
-def get_employee(id: int):
-    """Returns a single employee's profile including attached addresses."""
+def get_employee(id: int, service: t.Any = Depends(EmployeeService)):
+    """Get an employee by ID with their addresses."""
     try:
-        response = EmployeeService().read_employee(id)
+        response = service.read_employee(id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return response
@@ -63,23 +68,24 @@ def get_employee(id: int):
 def update_employee(
     id: int,
     data: Employee,
+    service: t.Any = Depends(EmployeeService)
 ):
-    """Updates employee profile details."""
+    """Update employee details by ID."""
     try:
-        response = EmployeeService().update_employee(id, data)
+        response = service.update_employee(id, data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return response
 
 
 @router.delete('/{id:int}')
-def delete_employee(id: int):
-    """Removes an employee record."""
+def delete_employee(id: int, service: t.Any = Depends(EmployeeService)):
+    """Delete an employee by ID."""
     try:
-        response = EmployeeService().delete_employee(id)
+        response = service.delete_employee(id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return JSONResponse(content=response, status_code=200)
+    return JSONResponse(content=response, status_code=204)
 
 

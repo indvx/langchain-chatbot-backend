@@ -1,12 +1,12 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Depends
 from models.employee_addresses import EmployeeAddress
 from services.employee_address import EmployeeAddressService
 from fastapi.responses import JSONResponse
+import typing as t
 
-# Employee address management API router
 router = APIRouter(
     prefix="/employee",
-    tags=["Employee"],
+    tags=["Employee Address"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -15,10 +15,11 @@ router = APIRouter(
 def create_employee_address(
     employee_id: int,
     address: EmployeeAddress,
+    service: t.Any = Depends(EmployeeAddressService)
 ) -> JSONResponse:
-    """Attaches a new address to an employee."""
+    """Add an address for an employee."""
     try:
-        response = EmployeeAddressService().create_employee_address(employee_id, address)
+        response = service.create_employee_address(employee_id, address)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -31,10 +32,11 @@ def create_employee_address(
 @router.get("/{employee_id:int}/address/list", summary="Get employee address list")
 def get_employee_address_list(
     employee_id: int,
+    service: t.Any = Depends(EmployeeAddressService)
 ):
-    """Retrieves all registered addresses for a specific employee."""
+    """List all addresses for an employee."""
     try:
-        response = EmployeeAddressService().read_employee_addresses(employee_id)
+        response = service.read_employee_addresses(employee_id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -44,10 +46,11 @@ def get_employee_address_list(
 @router.delete("/address/{id:int}", summary="Delete employee address by ID")
 def delete_employee_address(
     id: int,
+    service: t.Any = Depends(EmployeeAddressService)
 ):
-    """Deletes an address by its ID."""
+    """Delete an address by ID."""
     try:
-        response = EmployeeAddressService().delete_employee_address(id)
+        response = service.delete_employee_address(id)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -68,51 +68,36 @@ langchain-chatbot-backend/
 ├── utils/
 │   └── logger.py                  # Logger configuration
 ├── documents/                     # Local document staging directory for automated ingestion
+├── Dockerfile                     # Multi-stage container build configuration
+├── docker-compose.yml             # Docker service definitions
 └── requirements.txt               # Project dependencies
 ```
 
 ---
 
-## Environment Configuration
+## Prerequisites
 
-Copy `.env.example` to `.env` and fill in your credentials:
-
-```bash
-cp .env.example .env
-```
-
-### Configuration Variables (`.env`)
-
-| Variable | Description | Example / Default |
-| :--- | :--- | :--- |
-| **LLM_PROVIDER** | LLM model provider (`gemini` or `openai`) | `gemini` |
-| **LLM_MODEL_NAME** | LLM model name | `gemini-2.5-flash` / `gpt-4o-mini` |
-| **LLM_EMBEDDING_MODEL** | Embedding model name | `models/embedding-001` / `text-embedding-ada-002` |
-| **GOOGLE_API_KEY** | Google Gemini API key | `AIzaSy...` |
-| **OPENAI_API_KEY** | OpenAI API key | `sk-...` |
-| **META_VERIFY_TOKEN** | WhatsApp Meta Webhook verification token | `your_custom_verify_token` |
-| **META_ACCESS_TOKEN** | Meta Graph API permanent or access token | `EAA...` |
-| **META_PHONE_NUMBER_ID** | Meta WhatsApp Phone ID | `1006...` |
-| **META_GRAPH_API_URL** | Meta Graph API endpoint URL | `https://graph.facebook.com/v22.0` |
-| **TELEGRAM_BOT_TOKEN** | Telegram Bot API token from BotFather | `123456789:ABC...` |
-| **TELEGRAM_API_URL** | Telegram API base URL | `https://api.telegram.org` |
-| **DB_CONNECTION** | Database driver connection string | `mysql+pymysql` |
-| **DB_HOST** | MySQL database host | `localhost` |
-| **DB_PORT** | MySQL port | `3306` |
-| **DB_USER** | MySQL username | `root` |
-| **DB_PASSWORD** | MySQL password | `password` |
-| **DB_DATABASE** | MySQL database name | `ai_chatbot_db` |
-| **DOCUMENT_DIR_NAME** | Staging folder for document ingestion | `./documents` |
+Before setting up the project, make sure you have installed:
+- **Python 3.10+** (Python 3.11 or 3.12 recommended)
+- **MySQL 8.0+**
+- **Git**
+- **Docker & Docker Compose** (optional, if running via container)
+- An API Key for **Google Gemini** or **OpenAI**
 
 ---
 
-## Installation & Setup
+## Installation & Repository Setup
 
-### 1. Clone Repository & Prepare Virtual Environment
+### 1. Clone the Repository
 
 ```bash
+git clone https://github.com/<username>/langchain-chatbot-backend.git
 cd langchain-chatbot-backend
+```
 
+### 2. Set Up Virtual Environment
+
+```bash
 # Create virtual environment
 python3 -m venv venv
 
@@ -120,32 +105,56 @@ python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 3. Database Migration Setup
+### 4. Configure Environment Variables
 
-Ensure your MySQL database server is running and the target database exists. Then apply database migrations using Alembic:
+Copy `.env.example` to `.env` and fill in your credentials:
 
 ```bash
-# Run database migrations to create latest tables
-alembic upgrade head
+cp .env.example .env
 ```
 
-### 4. Run Development Server
 
-Launch the server with Uvicorn:
+### 5. Database Setup & Migrations
+
+1. Create the MySQL database if it does not exist:
+   ```sql
+   CREATE DATABASE ai_chatbot_db;
+   ```
+
+2. Run Alembic migrations to generate the tables:
+   ```bash
+   alembic upgrade head
+   ```
+
+---
+
+### 6. Run the Application
+
+#### Option A: Local Development Server
+
+Run FastAPI using Uvicorn:
 
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The interactive API documentation (Swagger UI) will be available at:
-**`http://localhost:8000/docs`**
+- API Docs (Swagger UI): **`http://localhost:8000/docs`**
+- Alternative Docs (ReDoc): **`http://localhost:8000/redoc`**
+
+#### Option B: Run with Docker Compose
+
+If you have Docker installed, you can spin up the application in a container:
+
+```bash
+docker compose up --build
+```
 
 ---
 
@@ -221,12 +230,12 @@ The interactive API documentation (Swagger UI) will be available at:
 ### Document Management
 - `POST /doc/upload` - Upload document file (`PDF`, `DOCX`, `TXT`) for automated vector ingestion.
 - `POST /doc/url/upload` - Ingest web page content from external URL.
-- `GET /doc/list` - List paginated document records (supports `filter`, `type`, `limit`, `page`).
+- `GET /doc/list` - List paginated documents (supports `filter`, `order_by`, `order_direction`, `type`, `limit`, `page`).
 - `DELETE /doc/{id}` - Delete document record, remove file from disk, and purge embeddings from ChromaDB.
 
 ### Employee Management
 - `POST /employee` or `POST /employee/signup` - Register a new employee record.
-- `GET /employee/list` - List paginated employee records (supports `filter`, `limit`, `page`).
+- `GET /employee/list` - List paginated employees (supports `filter`, `order_by`, `order_direction`, `limit`, `page`).
 - `GET /employee/{id}` - Get single employee details with associated addresses.
 - `PUT /employee/{id}` - Update employee profile.
 - `DELETE /employee/{id}` - Delete employee record.

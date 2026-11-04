@@ -9,9 +9,6 @@ import db
 from core.config import settings
 
 
-# Background document ingestion and vectorization service.
-# Watches the documents directory, splits text into overlapping chunks,
-# generates embeddings, and indexes them in ChromaDB vector stores.
 class DocumentIngestionService:
     def __init__(self):
         self.langchain_service = LangchainService()
@@ -25,7 +22,7 @@ class DocumentIngestionService:
         self.vector_store = self.langchain_service.chroma_store()
 
     def ingest_file(self, path: str, type: str = "public") -> bool:
-        """Parses a document, splits it into semantic chunks, and persists embeddings to ChromaDB."""
+        """Parse document, split into chunks, and save embeddings in Chroma."""
         try:
             logger.info(f"Starting ingestion for file: {path}")
 
@@ -52,19 +49,13 @@ class DocumentIngestionService:
             return False
 
     def main_loop(self) -> bool:
-        """
-        Scheduled polling task (executed every 10 seconds via BackgroundScheduler).
-        
-        Files prefixed with '_' are already embedded in ChromaDB.
-        Picks up newly uploaded raw files, embeds them, then prepends '_' 
-        to the filename on disk and in the DB.
-        """
+        """Poll the documents directory, embed new files, and prefix them with '_' when done."""
         logger.info("Background scheduler main_loop started.")
         processed_files = []
 
         try:
             for filename in os.listdir(self.data_folder):
-                # Ignore files already processed in prior runs
+                # Skip files already processed in previous runs
                 if not filename.startswith("_"):
                     file_path = os.path.join(self.data_folder, filename)
 
@@ -77,7 +68,7 @@ class DocumentIngestionService:
                         )
                         continue
 
-                    # Update file record in DB to reflect the new '_' filename
+                    # Update record in DB with the prefixed filename
                     new_filename = "_" + filename
                     document = document_crud._get_document_by_dir_name(
                         self.__db, filename
@@ -90,7 +81,7 @@ class DocumentIngestionService:
                         self.__db.refresh(document)
                         logger.debug(f"Updated DB record for file: {filename}")
 
-                    # Rename file on disk to mark ingestion as complete
+                    # Rename on disk so the scheduler ignores it in future runs
                     new_file_path = os.path.join(self.data_folder, new_filename)
                     os.rename(file_path, new_file_path)
                     processed_files.append(file_path)
