@@ -30,7 +30,7 @@ class LLMService:
     def gemini_embedding_model(self):
         return GoogleGenerativeAIEmbeddings(
             model=self.__embedding_model,
-            api_key=self.__api_key
+            google_api_key=self.__api_key
         )
 
     def openai_chat_model(self):
