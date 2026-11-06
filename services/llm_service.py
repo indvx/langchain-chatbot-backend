@@ -14,10 +14,6 @@ class LLMService:
         self.__base_url = settings.base_url
 
     def gemini_chat_model(self):
-        print("api_key", self.__api_key)
-        print("__chat_model", self.__chat_model)
-        print("__embedding_model", self.__embedding_model)
-        print("__base_url", self.__base_url)
         return ChatGoogleGenerativeAI(
             model=self.__chat_model,
             api_key=self.__api_key,
